@@ -1,4 +1,4 @@
-# Code of Conduct - GraphRAG
+# Code of Conduct - Fast GraphRAG
 
 ## Our Pledge
 
