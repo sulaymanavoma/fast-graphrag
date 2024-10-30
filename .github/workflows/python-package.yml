@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install ruff unittest
+        python -m pip install ruff
         pipx install poetry
         if [ -f pyproject.toml ]; then poetry install; fi
     - name: Lint with flake8
