@@ -8,7 +8,10 @@
   <a href="https://github.com/circlemind-ai/fast-graphrag/blob/main/CONTRIBUTING.md">
     <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs welcome!" />
   </a>
-  <img src="https://img.shields.io/discord/1297351202408894494" alt="Discord community channel" />
+  <a href="https://circlemind.co">
+    <img src="https://img.shields.io/badge/Project-Page-Green" alt="Circlemind Page" />
+  </a>
+  <img src="https://img.shields.io/badge/python->=3.10.1-blue">
 </h4>
 <p align="center">
   <p align="center"><b>Streamlined and promptable Fast GraphRAG framework designed for interpretable, high-precision, agent-driven retrieval workflows. <br> <a href="https://circlemind.co/"> Looking for a Managed Service? » </a> </b> </p>
