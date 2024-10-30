@@ -75,8 +75,8 @@ DOMAIN = "Analyze this story and identify the characters. Focus on how they inte
 
 EXAMPLE_QUERIES = [
     "What is the significance of Christmas Eve in A Christmas Carol?",
-    "How does the setting of Victorian London contribute to the story’s themes?",
-    "Describe the chain of events that leads to Scrooge’s transformation.",
+    "How does the setting of Victorian London contribute to the story's themes?",
+    "Describe the chain of events that leads to Scrooge's transformation.",
     "How does Dickens use the different spirits (Past, Present, and Future) to guide Scrooge?",
     "Why does Dickens choose to divide the story into \"staves\" rather than chapters?"
 ]
@@ -93,7 +93,7 @@ grag = GraphRAG(
 with open("./book.txt") as f:
     grag.insert(f.read())
 
-print(graph_func.query("Who is Scrooge?").response)
+print(grag.query("Who is Scrooge?").response)
 ```
 
 The next time you initialize fast-graphrag from the same working directory, it will retain all the knowledge automatically.
