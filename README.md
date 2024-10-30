@@ -3,7 +3,7 @@
 </h1>
 <h4 align="center">
   <a href="https://github.com/circlemind-ai/fast-graphrag/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="Fast-GraphRAG is released under the MIT license." />
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="fast-graphrag is released under the MIT license." />
   </a>
   <a href="https://github.com/circlemind-ai/fast-graphrag/blob/main/CONTRIBUTING.md">
     <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs welcome!" />
@@ -88,7 +88,6 @@ grag = GraphRAG(
     domain=DOMAIN,
     example_queries="\n".join(EXAMPLE_QUERIES),
     entity_types=ENTITY_TYPES)
-)
 
 with open("./book.txt") as f:
     grag.insert(f.read())
@@ -112,7 +111,7 @@ Our mission is to increase the number of successful GenAI applications in the wo
 
 This repo is under the MIT License. See [LICENSE.txt](https://github.com/circlemind-ai/fast-graphrag/blob/main/LICENSE) for more information.
 
-The fastest and most reliable way to get started with Fast-GraphRAG is using our managed service. Your first 100 requests are free every month, after which you pay based on usage.
+The fastest and most reliable way to get started with Fast GraphRAG is using our managed service. Your first 100 requests are free every month, after which you pay based on usage.
 
 <h1 align="center">
   <img width="800" src="demo.gif" alt="circlemind fast-graphrag demo">
