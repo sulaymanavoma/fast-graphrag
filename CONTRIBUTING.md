@@ -1,5 +1,5 @@
 <!-- omit in toc -->
-# Contributing to GraphRAG
+# Contributing to Fast GraphRAG
 
 First off, thanks for taking the time to contribute! ❤️
 
