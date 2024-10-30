@@ -63,7 +63,7 @@ export OPENAI_API_KEY="sk-..."
 Download a copy of *A Christmas Carol* by Charles Dickens:
 
 ```bash
-curl https://raw.githubusercontent.com/circlemind-ai/fast-graphrag/mock_data.txt > ./book.txt]]]
+curl https://raw.githubusercontent.com/circlemind-ai/fast-graphrag/refs/heads/main/mock_data.txt > ./book.txt
 ```
 
 Use the Python snippet below:
@@ -78,7 +78,7 @@ EXAMPLE_QUERIES = [
     "How does the setting of Victorian London contribute to the story’s themes?",
     "Describe the chain of events that leads to Scrooge’s transformation.",
     "How does Dickens use the different spirits (Past, Present, and Future) to guide Scrooge?",
-    "Why does Dickens choose to divide the story into "staves" rather than chapters?"
+    "Why does Dickens choose to divide the story into \"staves\" rather than chapters?"
 ]
 
 ENTITY_TYPES = ["Character", "Animal", "Place", "Object", "Activty", "Event"]
@@ -87,7 +87,8 @@ grag = GraphRAG(
     working_dir="./book_example",
     domain=DOMAIN,
     example_queries="\n".join(EXAMPLE_QUERIES),
-    entity_types=ENTITY_TYPES)
+    entity_types=ENTITY_TYPES
+)
 
 with open("./book.txt") as f:
     grag.insert(f.read())
