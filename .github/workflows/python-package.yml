@@ -26,13 +26,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pipx install poetry
-        poetry install
-    - name: Activate virtual environment
-      run: |
-        source $(poetry env info --path)/bin/activate
         python -m pip install --upgrade pip
         python -m pip install ruff
+        pipx install poetry
+        poetry install
     - name: Lint with ruff
       run: |
         # Stop the build if there are Python syntax errors or undefined names
@@ -43,6 +40,9 @@ jobs:
         
         # Treat all errors as warnings with max line length and complexity constraints
         ruff check . --exit-zero --line-length 127 --select C901
+    - name: Activate virtual environment
+      run: |
+        source $(poetry env info --path)/bin/activate
     - name: Test with pytest
       run: |
         python -m unittest discover -s tests/ -p "*_test.py"
