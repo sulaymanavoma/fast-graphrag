@@ -40,9 +40,6 @@ jobs:
         
         # Treat all errors as warnings with max line length and complexity constraints
         ruff check . --exit-zero --line-length 127 --select C901
-    - name: Activate virtual environment
-      run: |
-        source $(poetry env info --path)/bin/activate
     - name: Test with pytest
       run: |
-        python -m unittest discover -s tests/ -p "*_test.py"
+        poetry run python -m unittest discover -s tests/ -p "*_test.py"
