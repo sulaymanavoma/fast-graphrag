@@ -38,8 +38,6 @@ Fast GraphRAG is built to fit seamlessly into your retrieval pipeline, giving yo
 
 ## Install
 
-_Tested on Python 3.12._
-
 **Install from PyPi (recommended)**
 
 ```bash
