@@ -13,6 +13,7 @@ class TestBaseGraphRAG(unittest.IsolatedAsyncioTestCase):
         self.information_extraction_service = MagicMock()
         self.information_extraction_service.extract_entities_from_query = AsyncMock()
         self.state_manager = AsyncMock()
+        self.state_manager.embedding_service.embedding_dim = self.state_manager.entity_storage.embedding_dim = 1
 
         self.graph_rag = BaseGraphRAG(
             working_dir="test_dir",
