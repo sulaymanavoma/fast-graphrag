@@ -48,7 +48,7 @@ class DefaultChunkingService(BaseChunkingService[TChunk]):
     config: DefaultChunkingServiceConfig = field(default_factory=DefaultChunkingServiceConfig)
 
     def __post_init__(self):
-        self._split_re = re.compile(f"({"|".join(re.escape(s) for s in self.config.separators or [])})")
+        self._split_re = re.compile(f"({'|'.join(re.escape(s) for s in self.config.separators or [])})")
         self._chunk_size = self.config.chunk_token_size * TOKEN_TO_CHAR_RATIO
         self._chunk_overlap = self.config.chunk_token_overlap * TOKEN_TO_CHAR_RATIO
 

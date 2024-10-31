@@ -40,6 +40,6 @@ jobs:
         
         # Treat all errors as warnings with max line length and complexity constraints
         ruff check . --exit-zero --line-length 127 --select C901
-    - name: Test with pytest
+    - name: Test with unittest
       run: |
         poetry run python -m unittest discover -s tests/ -p "*_test.py"
