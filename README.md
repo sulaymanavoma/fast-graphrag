@@ -49,7 +49,7 @@ pip install fast-graphrag
 ```bash
 # clone this repo first
 cd fast-graphrag
-pip install -e .
+poetry install
 ```
 
 ## Quickstart
