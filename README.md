@@ -38,6 +38,8 @@ Fast GraphRAG is built to fit seamlessly into your retrieval pipeline, giving yo
 
 ## Install
 
+_Tested on Python 3.12._
+
 **Install from PyPi (recommended)**
 
 ```bash
@@ -103,6 +105,10 @@ The next time you initialize fast-graphrag from the same working directory, it w
 Whether it's big or small, we love contributions. Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated. Check out our [guide](https://github.com/circlemind-ai/fast-graphrag/blob/main/CONTRIBUTING.md) to see how to get started.
 
 Not sure where to get started? You can join our [Discord](https://discord.gg/McpuSEkR) and ask us any questions there.
+
+## ToDos
+
+- [ ] Add support for Python 3.10, currently have error `ImportError: cannot import name 'field_validator' from 'pydantic'`.
 
 ## Philosophy
 
