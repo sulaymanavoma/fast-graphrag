@@ -106,10 +106,6 @@ Whether it's big or small, we love contributions. Contributions are what make th
 
 Not sure where to get started? You can join our [Discord](https://discord.gg/McpuSEkR) and ask us any questions there.
 
-## ToDos
-
-- [ ] Add support for Python 3.10, currently have error `ImportError: cannot import name 'field_validator' from 'pydantic'`.
-
 ## Philosophy
 
 Our mission is to increase the number of successful GenAI applications in the world. To do that, we build memory and data tools that enable LLM apps to leverage highly specialized retrieval pipelines without the complexity of setting up and maintaining agentic workflows.
