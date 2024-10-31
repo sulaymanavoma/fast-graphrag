@@ -33,10 +33,13 @@ jobs:
     - name: Lint with flake8
       run: |
         # Stop the build if there are Python syntax errors or undefined names
-        ruff . --select E9,F63,F7,F82 --show-source --exit-zero
+        ruff check . --select E9,F63,F7,F82 --show-files
+
+        # Check with the same settings as the dev environment
+        ruff check . --select E,W,F,I,B,C4,N,D --ignore C901,W191,D401 --show-files
         
         # Treat all errors as warnings with max line length and complexity constraints
-        ruff . --exit-zero --line-length 127 --select C901
+        ruff check . --exit-zero --line-length 127 --select C901
     - name: Test with pytest
       run: |
         python -m unittest discover -s tests/ -p "*_test.py"
