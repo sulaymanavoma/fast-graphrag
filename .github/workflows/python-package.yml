@@ -26,11 +26,14 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        pipx install poetry
+        poetry install
+    - name: Activate virtual environment
+      run: |
+        source $(poetry env info --path)/bin/activate
         python -m pip install --upgrade pip
         python -m pip install ruff
-        pipx install poetry
-        if [ -f pyproject.toml ]; then poetry install; fi
-    - name: Lint with flake8
+    - name: Lint with ruff
       run: |
         # Stop the build if there are Python syntax errors or undefined names
         ruff check . --select E9,F63,F7,F82 --show-files
