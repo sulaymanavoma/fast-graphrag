@@ -25,6 +25,9 @@
   <a href="https://github.com/circlemind-ai/fast-graphrag/issues/new?assignees=&labels=&projects=&template=%F0%9F%92%A1-feature-request.md&title=">Request Feature</a>
 </h4>
 
+> [!NOTE]
+> Using *The Wizard of Oz*, `fast-graphrag` costs $0.08 vs. `graphrag` $0.48 — **a 6x costs saving** that further improves with data size and number of insertions. Stay tuned for the official benchmarks, and join us as a contributor!
+
 ## Features
 
 - **Interpretable and Debuggable Knowledge:** Graphs offer a human-navigable view of knowledge that can be queried, visualized, and updated.
