@@ -73,10 +73,10 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
         async def _get_graphs(
             fgraph: asyncio.Future[Optional[BaseGraphStorage[TEntity, TRelation, TId]]],
-        ) -> Tuple[List[TEntity], List[TRelation]]:
+        ) -> Optional[Tuple[List[TEntity], List[TRelation]]]:
             graph = await fgraph
             if graph is None:
-                return ([], [])
+                return None
 
             nodes = [t for i in range(await graph.node_count()) if (t := await graph.get_node_by_index(i)) is not None]
             edges = [t for i in range(await graph.edge_count()) if (t := await graph.get_edge_by_index(i)) is not None]
@@ -84,6 +84,10 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
             return (nodes, edges)
 
         graphs = await asyncio.gather(*[_get_graphs(fgraph) for fgraph in subgraphs])
+        graphs = [graph for graph in graphs if graph is not None]
+        if len(graphs) == 0:
+            return
+
         nodes, edges = zip(*graphs)
 
         _, upserted_nodes = await self.node_upsert_policy(

@@ -52,7 +52,7 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
         result = await self.storage.mask_new([["key1", "key3"]])
         self.assertTrue(np.array_equal(result, [[False, True]]))
 
-    @patch("builtins.open", new_callable=mock_open, read_data=pickle.dumps(({"key": "value"}, [1, 2, 3])))
+    @patch("builtins.open", new_callable=mock_open, read_data=pickle.dumps(({0: "value"}, [1, 2, 3], {"key": 0})))
     @patch("os.path.exists", return_value=True)
     @patch("fast_graphrag._storage._ikv_pickle.logger")
     async def test_insert_start_with_existing_file(self, mock_logger, mock_exists, mock_open):
@@ -63,8 +63,9 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
         await self.storage._insert_start()
 
         # Check if data was loaded correctly
-        self.assertEqual(self.storage._data, {"key": "value"})
+        self.assertEqual(self.storage._data, {0: "value"})
         self.assertEqual(self.storage._free_indices, [1, 2, 3])
+        self.assertEqual(self.storage._key_to_index, {"key": 0})
         mock_logger.debug.assert_called_with("Loaded 1 elements from indexed key-value storage 'dummy_path'.")
 
     @patch("os.path.exists", return_value=False)
@@ -100,8 +101,9 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
     async def test_insert_done(self, mock_logger, mock_open):
         self.storage.namespace = MagicMock()
         self.storage.namespace.get_resource_path.return_value = "dummy_path"
-        self.storage._data = {"key": "value"}
+        self.storage._data = {0: "value"}
         self.storage._free_indices = [1, 2, 3]
+        self.storage._key_to_index = {"key": 0}
 
         # Call the function
         await self.storage._insert_done()
@@ -110,7 +112,7 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
         mock_open.assert_called_with("dummy_path", "wb")
         mock_logger.debug.assert_called_with("Saving 1 elements to indexed key-value storage 'dummy_path'.")
 
-    @patch("builtins.open", new_callable=mock_open, read_data=pickle.dumps(({"key": "value"}, [1, 2, 3])))
+    @patch("builtins.open", new_callable=mock_open, read_data=pickle.dumps(({0: "value"}, [1, 2, 3], {"key": 0})))
     @patch("os.path.exists", return_value=True)
     @patch("fast_graphrag._storage._ikv_pickle.logger")
     async def test_query_start_with_existing_file(self, mock_logger, mock_exists, mock_open):
@@ -121,8 +123,9 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
         await self.storage._query_start()
 
         # Check if data was loaded correctly
-        self.assertEqual(self.storage._data, {"key": "value"})
+        self.assertEqual(self.storage._data, {0: "value"})
         self.assertEqual(self.storage._free_indices, [1, 2, 3])
+        self.assertEqual(self.storage._key_to_index, {"key": 0})
         mock_logger.debug.assert_called_with("Loaded 1 elements from indexed key-value storage 'dummy_path'.")
 
     @patch("os.path.exists", return_value=False)
