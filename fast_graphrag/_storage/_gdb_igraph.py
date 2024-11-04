@@ -116,7 +116,7 @@ class IGraphStorage(BaseGraphStorage[GTNode, GTEdge, GTId]):
                 **asdict(edge)
             ).index  # type: ignore
 
-    async def delete_edges_by_index(self, indices: List[TIndex]) -> None:
+    async def delete_edges_by_index(self, indices: Iterable[TIndex]) -> None:
         self._graph.delete_edges(indices)  # type: ignore
 
     async def score_nodes(self, initial_weights: Optional[csr_matrix]) -> csr_matrix:

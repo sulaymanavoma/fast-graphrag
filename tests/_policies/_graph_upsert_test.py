@@ -1,6 +1,7 @@
 # type: ignore
+import copy
 import unittest
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from fast_graphrag._llm._llm_openai import BaseLLMService
 from fast_graphrag._policies._graph_upsert import (
@@ -8,6 +9,7 @@ from fast_graphrag._policies._graph_upsert import (
     # DefaultGraphUpsertPolicy,
     DefaultNodeUpsertPolicy,
     EdgeUpsertPolicy_UpsertIfValidNodes,
+    EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM,
     NodeUpsertPolicy_SummarizeDescription,
 )
 from fast_graphrag._storage._base import BaseGraphStorage
@@ -199,6 +201,110 @@ class TestDefaultNodeUpsertPolicy(unittest.IsolatedAsyncioTestCase):  # noqa: N8
         # Assertions
         target.get_node.assert_has_calls([call(node1), call(node2)])
         target.upsert_node.assert_has_calls([call(node=node1, node_index=None), call(node=node2, node_index=None)])
+
+
+class TestEdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(unittest.IsolatedAsyncioTestCase):  # noqa: N801
+    async def asyncSetUp(self):
+        self.mock_llm = AsyncMock(spec=BaseLLMService)
+        self.mock_target = AsyncMock(spec=BaseGraphStorage)
+
+    async def test_call_edges_below_threshold(self):
+        edge_upsert_policy = EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(
+            EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM.Config(edge_merge_threshold=1)
+        )
+        sources = ["node1", "node2", "node3"]
+        targets = ["node4", "node5", "node6"]
+
+        edges = [
+            MagicMock(source=source, target=target, description=source + target)
+            for source in sources
+            for target in targets
+        ]
+        self.mock_target.get_edges = AsyncMock(return_value=[])
+
+        insert_index = 0
+
+        def _upsert_edge(edge, edge_index):
+            nonlocal insert_index
+            insert_index += 1
+            return insert_index
+
+        self.mock_target.upsert_edge = AsyncMock(side_effect=_upsert_edge)
+        self.mock_target.delete_edges_by_index = AsyncMock()
+
+        target, upserted_edges = await edge_upsert_policy(self.mock_llm, self.mock_target, edges)
+        self.assertEqual(len(list(upserted_edges)), 9)
+        self.assertEqual(len(list(self.mock_target.delete_edges_by_index.call_args[0][0])), 0)
+        self.assertEqual(insert_index, 9)
+        self.mock_target.delete_edges_by_index.assert_called_once()
+
+    @patch("fast_graphrag._policies._graph_upsert.format_and_send_prompt", new_callable=AsyncMock)
+    async def test_call_edges_above_threshold(self, mock_format_and_send_prompt):
+        edge_upsert_policy = EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(
+            EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM.Config(edge_merge_threshold=1)
+        )
+        sources = ["node1", "node2"]
+        targets = ["node4", "node5"]
+
+        edges = [
+            MagicMock(source=source, target=target, description=source + target)
+            for source in sources
+            for target in targets
+        ]
+        existing_edges = {
+            "node1node4": [(copy.copy(edges[0]), 1)],
+            "node1node5": [
+                (copy.copy(edges[1]), 0),
+                (copy.copy(edges[1]), 2),
+                (copy.copy(edges[1]), 3),
+                (copy.copy(edges[1]), 4),
+            ],
+        }
+        edges = [copy.copy(edges[0])] + edges  # add a duplicate for first edge
+        self.mock_target.get_edges = AsyncMock(
+            side_effect=lambda source_node, target_node: existing_edges.get(source_node + target_node, [])
+        )
+
+        def _format_and_send_prompt(format_kwargs, **kwargs):
+            if "node4" in format_kwargs["edge_list"]:
+                mock_result = MagicMock()
+                mock_group = MagicMock()
+                mock_group.ids = [0, 1]
+                mock_group.description = "Summary"
+                mock_result.groups = [mock_group]
+                return mock_result, None
+            elif "node5" in format_kwargs["edge_list"]:
+                mock_result = MagicMock()
+                mock_group1 = MagicMock()
+                mock_group1.ids = [1, 2, 0]
+                mock_group1.description = "Summary1"
+                mock_group2 = MagicMock()
+                mock_group2.ids = [4, 3]
+                mock_group2.description = "Summary2"
+                mock_result.groups = [mock_group1, mock_group2]
+                return mock_result, None
+
+        mock_format_and_send_prompt.side_effect = _format_and_send_prompt
+
+        insert_index = 5  # number of existing edges
+
+        def _upsert_edge(edge, edge_index):
+            if edge_index is not None:
+                return edge_index
+            nonlocal insert_index
+            i = insert_index
+            insert_index += 1
+            return i
+
+        self.mock_target.upsert_edge = AsyncMock(side_effect=_upsert_edge)
+        self.mock_target.delete_edges_by_index = AsyncMock()
+
+        target, upserted_edges = await edge_upsert_policy(self.mock_llm, self.mock_target, edges)
+        upserted_edges = list(upserted_edges)
+        edges = [e[1].description for e in upserted_edges]
+        self.assertEqual(edges, ['Summary', 'node1node4', 'Summary1', 'Summary2', 'node2node4', 'node2node5'])
+        self.assertEqual([e[0] for e in upserted_edges], [1, 5, 2, 6, 7, 8])
+        self.assertEqual(set(self.mock_target.delete_edges_by_index.call_args[0][0]), {0, 3, 4})
 
 
 class TestDefaultEdgeUpsertPolicy(unittest.IsolatedAsyncioTestCase):  # noqa: N801

@@ -242,7 +242,7 @@ class BaseGraphStorage(BaseStorage, Generic[GTNode, GTEdge, GTId]):
     async def upsert_edge(self, edge: GTEdge, edge_index: Union[TIndex, None]) -> TIndex:
         raise NotImplementedError
 
-    async def delete_edges_by_index(self, indices: List[TIndex]) -> None:
+    async def delete_edges_by_index(self, indices: Iterable[TIndex]) -> None:
         raise NotImplementedError
 
     async def get_entities_to_relationships_map(self) -> csr_matrix:
