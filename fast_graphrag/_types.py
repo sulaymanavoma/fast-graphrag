@@ -83,7 +83,7 @@ GTResponseModel = TypeVar("GTResponseModel", bound=Union[str, BaseModel, BTRespo
 def dump_to_csv(
     data: Iterable[object],
     fields: List[str],
-    separator: str = "|",
+    separator: str = ";;",
     with_header: bool = False,
     **values: Dict[str, List[Any]],
 ) -> str:
@@ -101,9 +101,9 @@ def dump_to_csv(
 TEmbeddingType: TypeAlias = np.float32
 TEmbedding: TypeAlias = npt.NDArray[TEmbeddingType]
 
-THash: TypeAlias = int  # TODO: np.uint64
+THash: TypeAlias = np.uint64
 TScore: TypeAlias = np.float32
-TIndex: TypeAlias = THash
+TIndex: TypeAlias = int
 TId: TypeAlias = str
 
 
