@@ -11,12 +11,10 @@ from fast_graphrag._utils import TOKEN_TO_CHAR_RATIO
 from ._base import BaseChunkingService
 
 DEFAULT_SEPARATORS = [
-    # Paragraph separators
+    # Paragraph and page separators
+    "\n\n\n",
     "\n\n",
     "\r\n\r\n",
-    # Line breaks
-    "\n",
-    "\r\n",
     # Sentence ending punctuation
     "。",  # Chinese period
     "．",  # Full-width dot
@@ -25,12 +23,6 @@ DEFAULT_SEPARATORS = [
     "!",  # English exclamation mark
     "？",  # Chinese question mark
     "?",  # English question mark
-    # Whitespace characters
-    " ",  # Space
-    "\t",  # Tab
-    "\u3000",  # Full-width space
-    # Special characters
-    "\u200b",  # Zero-width space (used in some Asian languages)
 ]
 
 
