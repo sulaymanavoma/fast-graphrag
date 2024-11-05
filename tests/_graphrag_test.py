@@ -1,5 +1,6 @@
 # type: ignore
 import unittest
+from dataclasses import dataclass
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fast_graphrag._graphrag import BaseGraphRAG
@@ -15,16 +16,21 @@ class TestBaseGraphRAG(unittest.IsolatedAsyncioTestCase):
         self.state_manager = AsyncMock()
         self.state_manager.embedding_service.embedding_dim = self.state_manager.entity_storage.embedding_dim = 1
 
-        self.graph_rag = BaseGraphRAG(
+        @dataclass
+        class BaseGraphRAGNoEmbeddingValidation(BaseGraphRAG):
+            def __post_init__(self):
+                pass
+
+        self.graph_rag = BaseGraphRAGNoEmbeddingValidation(
             working_dir="test_dir",
             domain="test_domain",
             example_queries="test_query",
             entity_types=["type1", "type2"],
-            llm_service=self.llm_service,
-            chunking_service=self.chunking_service,
-            information_extraction_service=self.information_extraction_service,
-            state_manager=self.state_manager,
         )
+        self.graph_rag.llm_service = self.llm_service
+        self.graph_rag.chunking_service = self.chunking_service
+        self.graph_rag.information_extraction_service = self.information_extraction_service
+        self.graph_rag.state_manager = self.state_manager
 
     async def test_async_insert(self):
         self.chunking_service.extract = AsyncMock(return_value=["chunked_data"])

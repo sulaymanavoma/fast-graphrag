@@ -77,12 +77,12 @@ class BaseStateManagerService(Generic[GTNode, GTEdge, GTHash, GTChunk, GTId, GTE
 
     embedding_service: BaseEmbeddingService = field()
 
+    node_upsert_policy: BaseNodeUpsertPolicy[GTNode, GTId] = field()
+    edge_upsert_policy: BaseEdgeUpsertPolicy[GTEdge, GTId] = field()
+
     entity_ranking_policy: BaseRankingPolicy = field(default_factory=lambda: BaseRankingPolicy(None))
     relation_ranking_policy: BaseRankingPolicy = field(default_factory=lambda: BaseRankingPolicy(None))
     chunk_ranking_policy: BaseRankingPolicy = field(default_factory=lambda: BaseRankingPolicy(None))
-
-    node_upsert_policy: BaseNodeUpsertPolicy[GTNode, GTId] = field(default_factory=lambda: BaseNodeUpsertPolicy(None))
-    edge_upsert_policy: BaseEdgeUpsertPolicy[GTEdge, GTId] = field(default_factory=lambda: BaseEdgeUpsertPolicy(None))
 
     node_specificity: bool = field(default=False)
 

@@ -24,27 +24,35 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
     example_queries: str = field()
     entity_types: List[str] = field()
 
-    llm_service: BaseLLMService = field(default_factory=lambda: BaseLLMService())
-    chunking_service: BaseChunkingService[GTChunk] = field(default_factory=lambda: BaseChunkingService())
+    llm_service: BaseLLMService = field(init=False, default_factory=lambda: BaseLLMService())
+    chunking_service: BaseChunkingService[GTChunk] = field(init=False, default_factory=lambda: BaseChunkingService())
     information_extraction_service: BaseInformationExtractionService[GTChunk, GTNode, GTEdge, GTId] = field(
-        default_factory=lambda: BaseInformationExtractionService(graph_upsert=BaseGraphUpsertPolicy(
-            config=None,
-            nodes_upsert_cls=BaseNodeUpsertPolicy,
-            edges_upsert_cls=BaseEdgeUpsertPolicy,
-        ))
+        init=False,
+        default_factory=lambda: BaseInformationExtractionService(
+            graph_upsert=BaseGraphUpsertPolicy(
+                config=None,
+                nodes_upsert_cls=BaseNodeUpsertPolicy,
+                edges_upsert_cls=BaseEdgeUpsertPolicy,
+            )
+        ),
     )
     state_manager: BaseStateManagerService[GTNode, GTEdge, GTHash, GTChunk, GTId, GTEmbedding] = field(
+        init=False,
         default_factory=lambda: BaseStateManagerService(
             working_dir="",
             graph_storage=BaseGraphStorage[GTNode, GTEdge, GTId](config=None),
             entity_storage=BaseVectorStorage[GTId, GTEmbedding](config=None),
             chunk_storage=BaseIndexedKeyValueStorage[GTHash, GTChunk](config=None),
             embedding_service=BaseEmbeddingService(),
-        )
+            node_upsert_policy=BaseNodeUpsertPolicy(config=None),
+            edge_upsert_policy=BaseEdgeUpsertPolicy(config=None),
+        ),
     )
 
     def __post_init__(self):
-        if self.state_manager.embedding_service.embedding_dim != self.state_manager.entity_storage.embedding_dim:
+        if not self.state_manager.embedding_service.validate_embedding_dim(
+            self.state_manager.entity_storage.embedding_dim
+        ):
             raise ValueError("Embedding dimension mismatch between the embedding service and the entity storage.")
 
     def insert(

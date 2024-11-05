@@ -64,7 +64,7 @@ class MetaModel(_model_construction.ModelMetaclass):
 
 
 class BTResponseModel:
-    class Model:
+    class Model(BaseModel):
         @staticmethod
         def to_dataclass(pydantic: Any) -> Any:
             raise NotImplementedError
