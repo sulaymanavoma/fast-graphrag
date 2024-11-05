@@ -25,7 +25,7 @@ from ._base import BaseEmbeddingService, BaseLLMService
 class OpenAILLMService(BaseLLMService):
     """LLM Service for OpenAI LLMs."""
 
-    config: BaseLLMService.Config = field(default_factory=lambda: BaseLLMService.Config(model="gpt-4o-mini"))
+    model: Optional[str] = field(default="gpt-4o-mini")
 
     def __post_init__(self):
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
@@ -59,7 +59,7 @@ class OpenAILLMService(BaseLLMService):
             str: The response from the language model.
         """
         logger.debug(f"Sending message with prompt: {prompt}")
-        model = model or self.config.model
+        model = model or self.model
         if model is None:
             raise ValueError("Model name must be provided.")
         messages: list[dict[str, str]] = []
@@ -105,9 +105,8 @@ class OpenAILLMService(BaseLLMService):
 class OpenAIEmbeddingService(BaseEmbeddingService):
     """Base class for Language Model implementations."""
 
-    config: BaseEmbeddingService.Config = field(
-        default_factory=lambda: BaseEmbeddingService.Config(embedding_dim=1536, model="text-embedding-3-small")
-    )
+    embedding_dim: int = field(default=1536)
+    model: Optional[str] = field(default="text-embedding-3-small")
 
     def __post_init__(self):
         self.embedding_async_client: AsyncOpenAI = AsyncOpenAI()
@@ -131,7 +130,7 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
             list[float]: The embedding vector as a list of floats.
         """
         logger.debug(f"Getting embedding for texts: {texts}")
-        model = model or self.config.model
+        model = model or self.model
         if model is None:
             raise ValueError("Model name must be provided.")
         response = await self.embedding_async_client.embeddings.create(
@@ -142,4 +141,4 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
         return np.array([dp.embedding for dp in response.data])
 
     def validate_embedding_dim(self, embedding_dim: int) -> bool:
-        return embedding_dim == self.config.embedding_dim
+        return embedding_dim == self.embedding_dim

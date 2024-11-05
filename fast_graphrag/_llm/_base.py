@@ -44,12 +44,8 @@ async def format_and_send_prompt(
 class BaseLLMService:
     """Base class for Language Model implementations."""
 
-    @dataclass
-    class Config:
-        model: Optional[str] = field(default=None)
-        base_url: Optional[str] = field(default=None)
-
-    config: Config = field(default_factory=lambda: BaseLLMService.Config())
+    model: Optional[str] = field(default=None)
+    base_url: Optional[str] = field(default=None)
     llm_async_client: Any = field(init=False, default=None)
 
     async def send_message(
@@ -81,13 +77,10 @@ class BaseLLMService:
 class BaseEmbeddingService:
     """Base class for Language Model implementations."""
 
-    @dataclass
-    class Config:
-        embedding_dim: int = field(default=1536)
-        model: Optional[str] = field(default="text-embedding-3-small")
-        base_url: Optional[str] = field(default=None)
+    embedding_dim: int = field(default=1536)
+    model: Optional[str] = field(default="text-embedding-3-small")
+    base_url: Optional[str] = field(default=None)
 
-    config: Config = field(default_factory=lambda: BaseEmbeddingService.Config())
     embedding_async_client: Any = field(init=False, default=None)
 
     async def get_embedding(

@@ -65,7 +65,7 @@ class GraphRAG(BaseGraphRAG[TEmbedding, THash, TChunk, TEntity, TRelation, TId])
         )
         entity_storage: DefaultVectorStorage[TIndex, TEmbedding] = field(
             default_factory=lambda: DefaultVectorStorage(
-                DefaultVectorStorageConfig(embedding_dim=DefaultEmbeddingService.Config().embedding_dim)
+                DefaultVectorStorageConfig(embedding_dim=DefaultEmbeddingService().embedding_dim)
             )
         )
         chunk_storage: DefaultIndexedKeyValueStorage[THash, TChunk] = field(
