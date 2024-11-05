@@ -298,7 +298,8 @@ class EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(BaseEdgeUpsertPolicy[TRel
         self, llm: BaseLLMService, target: BaseGraphStorage[GTNode, TRelation, TId], source_edges: Iterable[TRelation]
     ) -> Tuple[BaseGraphStorage[GTNode, TRelation, TId], Iterable[Tuple[TIndex, TRelation]]]:
         grouped_edges: Dict[Tuple[TId, TId], List[TRelation]] = defaultdict(lambda: [])
-
+        upserted_edges: List[List[Tuple[TIndex, TRelation]]] = []
+        to_delete_edges: List[List[TIndex]] = []
         for edge in source_edges:
             grouped_edges[(edge.source, edge.target)].append(edge)
 
@@ -307,13 +308,15 @@ class EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(BaseEdgeUpsertPolicy[TRel
                 self._upsert_edge(llm, target, edges, source_entity, target_entity)
                 for (source_entity, target_entity), edges in grouped_edges.items()
             )
-            upserted_edges, to_delete_edges = zip(*await asyncio.gather(*edge_upsert_tasks))
+            tasks = await asyncio.gather(*edge_upsert_tasks)
+            if len(tasks):
+                upserted_edges, to_delete_edges = zip(*tasks)
         else:
-            upserted_edges, to_delete_edges = zip(
-                *[
-                    await self._upsert_edge(llm, target, edges, source_entity, target_entity)
-                    for (source_entity, target_entity), edges in grouped_edges.items()
-                ]
-            )
+            tasks = [
+                await self._upsert_edge(llm, target, edges, source_entity, target_entity)
+                for (source_entity, target_entity), edges in grouped_edges.items()
+            ]
+            if len(tasks):
+                upserted_edges, to_delete_edges = zip(*tasks)
         await target.delete_edges_by_index(chain(*to_delete_edges))
         return target, chain(*upserted_edges)
