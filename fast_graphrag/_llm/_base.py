@@ -44,6 +44,12 @@ async def format_and_send_prompt(
 class BaseLLMService:
     """Base class for Language Model implementations."""
 
+    @dataclass
+    class Config:
+        model: Optional[str] = field(default=None)
+        base_url: Optional[str] = field(default=None)
+
+    config: Config = field(default_factory=lambda: BaseLLMService.Config())
     llm_async_client: Any = field(init=False, default=None)
 
     async def send_message(
@@ -75,8 +81,14 @@ class BaseLLMService:
 class BaseEmbeddingService:
     """Base class for Language Model implementations."""
 
+    @dataclass
+    class Config:
+        embedding_dim: int = field(default=1536)
+        model: Optional[str] = field(default="text-embedding-3-small")
+        base_url: Optional[str] = field(default=None)
+
+    config: Config = field(default_factory=lambda: BaseEmbeddingService.Config())
     embedding_async_client: Any = field(init=False, default=None)
-    embedding_dim: int = -1
 
     async def get_embedding(
         self, texts: list[str], model: Optional[str] = None
@@ -89,5 +101,16 @@ class BaseEmbeddingService:
 
         Returns:
             list[float]: The embedding vector as a list of floats.
+        """
+        raise NotImplementedError
+
+    def validate_embedding_dim(self, embedding_dim: int) -> bool:
+        """Validate the embedding dimension.
+
+        Args:
+            embedding_dim (int): The embedding dimension to validate.
+
+        Returns:
+            bool: True if the embedding dimension is valid, False otherwise.
         """
         raise NotImplementedError

@@ -25,11 +25,11 @@ from ._base import BaseEmbeddingService, BaseLLMService
 class OpenAILLMService(BaseLLMService):
     """LLM Service for OpenAI LLMs."""
 
+    config: BaseLLMService.Config = field(default_factory=lambda: BaseLLMService.Config(model="gpt-4o-mini"))
+
     def __post_init__(self):
-        # Patch the OpenAI client with instructor
-        openi_client = AsyncOpenAI()
-        self.llm_async_client = instructor.from_openai(openi_client)
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
+        self.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(AsyncOpenAI())
 
     @retry(
         stop=stop_after_attempt(3),
@@ -49,7 +49,7 @@ class OpenAILLMService(BaseLLMService):
 
         Args:
             prompt (str): The input message to send to the language model.
-            model (str): The name of the model to use. Defaults to "gpt-4o-mini".
+            model (str): The name of the model to use. Defaults to the model provided in the config.
             system_prompt (str, optional): The system prompt to set the context for the conversation. Defaults to None.
             history_messages (list, optional): A list of previous messages in the conversation. Defaults to empty.
             response_model (Type[T], optional): The Pydantic model to parse the response. Defaults to None.
@@ -59,8 +59,9 @@ class OpenAILLMService(BaseLLMService):
             str: The response from the language model.
         """
         logger.debug(f"Sending message with prompt: {prompt}")
+        model = model or self.config.model
         if model is None:
-            model = "gpt-4o-mini"
+            raise ValueError("Model name must be provided.")
         messages: list[dict[str, str]] = []
 
         if system_prompt:
@@ -95,9 +96,7 @@ class OpenAILLMService(BaseLLMService):
         logger.debug(f"Received response: {llm_response}")
 
         if response_model and issubclass(response_model, BTResponseModel):
-            llm_response = cast(
-                GTResponseModel, cast(BTResponseModel.Model, llm_response).to_dataclass(llm_response)
-            )
+            llm_response = cast(GTResponseModel, cast(BTResponseModel.Model, llm_response).to_dataclass(llm_response))
 
         return llm_response, messages
 
@@ -106,8 +105,13 @@ class OpenAILLMService(BaseLLMService):
 class OpenAIEmbeddingService(BaseEmbeddingService):
     """Base class for Language Model implementations."""
 
-    embedding_async_client: AsyncOpenAI = field(default_factory=AsyncOpenAI)
-    embedding_dim: int = 1536
+    config: BaseEmbeddingService.Config = field(
+        default_factory=lambda: BaseEmbeddingService.Config(embedding_dim=1536, model="text-embedding-3-small")
+    )
+
+    def __post_init__(self):
+        self.embedding_async_client: AsyncOpenAI = AsyncOpenAI()
+        logger.debug("Initialized OpenAIEmbeddingService with OpenAI client.")
 
     @retry(
         stop=stop_after_attempt(3),
@@ -121,17 +125,21 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
 
         Args:
             texts (str): The input text to embed.
-            model (str): The name of the model to use. Defaults to "text-embedding-3-small".
+            model (str, optional): The name of the model to use. Defaults to the model provided in the config.
 
         Returns:
             list[float]: The embedding vector as a list of floats.
         """
         logger.debug(f"Getting embedding for texts: {texts}")
+        model = model or self.config.model
         if model is None:
-            model = "text-embedding-3-small"
+            raise ValueError("Model name must be provided.")
         response = await self.embedding_async_client.embeddings.create(
             model=model, input=texts, encoding_format="float"
         )
         logger.debug(f"Received embedding response: {len(response.data)} embeddings")
 
         return np.array([dp.embedding for dp in response.data])
+
+    def validate_embedding_dim(self, embedding_dim: int) -> bool:
+        return embedding_dim == self.config.embedding_dim
