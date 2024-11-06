@@ -20,7 +20,7 @@
 <h4 align="center">
   <a href="#install">Install</a> |
   <a href="#quickstart">Quickstart</a> |
-  <a href="https://discord.gg/McpuSEkR">Community</a> |
+  <a href="https://discord.gg/DvY2B8u4sA">Community</a> |
   <a href="https://github.com/circlemind-ai/fast-graphrag/issues/new?assignees=&labels=&projects=&template=%F0%9F%90%9E-bug-report.md&title=">Report Bug</a> |
   <a href="https://github.com/circlemind-ai/fast-graphrag/issues/new?assignees=&labels=&projects=&template=%F0%9F%92%A1-feature-request.md&title=">Request Feature</a>
 </h4>
@@ -105,7 +105,7 @@ The next time you initialize fast-graphrag from the same working directory, it w
 
 Whether it's big or small, we love contributions. Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated. Check out our [guide](https://github.com/circlemind-ai/fast-graphrag/blob/main/CONTRIBUTING.md) to see how to get started.
 
-Not sure where to get started? You can join our [Discord](https://discord.gg/McpuSEkR) and ask us any questions there.
+Not sure where to get started? You can join our [Discord](https://discord.gg/DvY2B8u4sA) and ask us any questions there.
 
 ## Philosophy
 
