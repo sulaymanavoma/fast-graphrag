@@ -1,4 +1,3 @@
-import os
 import pickle
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Union
@@ -77,9 +76,9 @@ class PickleIndexedKeyValueStorage(BaseIndexedKeyValueStorage[GTKey, GTValue]):
 
     async def _insert_start(self):
         if self.namespace:
-            data_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME)
+            data_file_name = self.namespace.get_load_path(self.RESOURCE_NAME)
 
-            if os.path.exists(data_file_name):
+            if data_file_name:
                 try:
                     with open(data_file_name, "rb") as f:
                         self._data, self._free_indices, self._key_to_index = pickle.load(f)
@@ -104,7 +103,7 @@ class PickleIndexedKeyValueStorage(BaseIndexedKeyValueStorage[GTKey, GTValue]):
 
     async def _insert_done(self):
         if self.namespace:
-            data_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME)
+            data_file_name = self.namespace.get_save_path(self.RESOURCE_NAME)
             try:
                 with open(data_file_name, "wb") as f:
                     pickle.dump((self._data, self._free_indices, self._key_to_index), f)
@@ -116,8 +115,8 @@ class PickleIndexedKeyValueStorage(BaseIndexedKeyValueStorage[GTKey, GTValue]):
 
     async def _query_start(self):
         assert self.namespace, "Loading a kv storage requires a namespace."
-        data_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME)
-        if os.path.exists(data_file_name):
+        data_file_name = self.namespace.get_load_path(self.RESOURCE_NAME)
+        if data_file_name:
             try:
                 with open(data_file_name, "rb") as f:
                     self._data, self._free_indices, self._key_to_index = pickle.load(f)

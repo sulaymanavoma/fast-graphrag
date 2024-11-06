@@ -1,4 +1,3 @@
-import os
 import pickle
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Tuple, Union
@@ -113,10 +112,10 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         self._index = hnswlib.Index(space="cosine", dim=self.config.embedding_dim)  # type: ignore
 
         if self.namespace:
-            index_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
-            metadata_file_name = self.namespace.get_resource_path(self.RESOURCE_METADATA_NAME)
+            index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
+            metadata_file_name = self.namespace.get_load_path(self.RESOURCE_METADATA_NAME)
 
-            if os.path.exists(index_file_name) and os.path.exists(metadata_file_name):
+            if index_file_name and metadata_file_name:
                 try:
                     self._index.load_index(index_file_name, max_elements=self.config.max_elements)
                     with open(metadata_file_name, "rb") as f:
@@ -151,8 +150,8 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
     async def _insert_done(self):
         if self.namespace:
-            index_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
-            metadata_file_name = self.namespace.get_resource_path(self.RESOURCE_METADATA_NAME)
+            index_file_name = self.namespace.get_save_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
+            metadata_file_name = self.namespace.get_save_path(self.RESOURCE_METADATA_NAME)
 
             try:
                 self._index.save_index(index_file_name)
@@ -168,9 +167,9 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         assert self.namespace, "Loading a vectordb requires a namespace."
         self._index = hnswlib.Index(space="cosine", dim=self.config.embedding_dim)  # type: ignore
 
-        index_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
-        metadata_file_name = self.namespace.get_resource_path(self.RESOURCE_METADATA_NAME)
-        if os.path.exists(index_file_name) and os.path.exists(metadata_file_name):
+        index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
+        metadata_file_name = self.namespace.get_load_path(self.RESOURCE_METADATA_NAME)
+        if index_file_name and metadata_file_name:
             try:
                 self._index.load_index(index_file_name, max_elements=self.config.max_elements)
                 with open(metadata_file_name, "rb") as f:

@@ -11,13 +11,8 @@ from fast_graphrag._policies._base import (
     BaseNodeUpsertPolicy,
     BaseRankingPolicy,
 )
-from fast_graphrag._storage import (
-    BaseBlobStorage,
-    BaseGraphStorage,
-    BaseIndexedKeyValueStorage,
-    BaseVectorStorage,
-    Namespace,
-)
+from fast_graphrag._storage import BaseBlobStorage, BaseGraphStorage, BaseIndexedKeyValueStorage, BaseVectorStorage
+from fast_graphrag._storage._namespace import Workspace
 from fast_graphrag._types import (
     GTChunk,
     GTEdge,
@@ -68,7 +63,7 @@ class BaseInformationExtractionService(Generic[GTChunk, GTNode, GTEdge, GTId]):
 class BaseStateManagerService(Generic[GTNode, GTEdge, GTHash, GTChunk, GTId, GTEmbedding]):
     """A class for managing state operations."""
 
-    _namespace: Namespace = field(init=False)
+    _workspace: Workspace = field(init=False)
     working_dir: str = field()
 
     graph_storage: BaseGraphStorage[GTNode, GTEdge, GTId] = field()

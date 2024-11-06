@@ -1,4 +1,3 @@
-import os
 from dataclasses import asdict, dataclass, field
 from typing import Any, Generic, Iterable, List, Optional, Tuple, Type, Union
 
@@ -159,9 +158,9 @@ class IGraphStorage(BaseGraphStorage[GTNode, GTEdge, GTId]):
 
     async def _insert_start(self):
         if self.namespace:
-            graph_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME)
+            graph_file_name = self.namespace.get_load_path(self.RESOURCE_NAME)
 
-            if os.path.exists(graph_file_name):
+            if graph_file_name:
                 try:
                     self._graph = ig.Graph.Read_Picklez(graph_file_name)  # type: ignore
                     logger.debug(f"Loaded graph storage '{graph_file_name}'.")
@@ -178,7 +177,7 @@ class IGraphStorage(BaseGraphStorage[GTNode, GTEdge, GTId]):
 
     async def _insert_done(self):
         if self.namespace:
-            graph_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME)
+            graph_file_name = self.namespace.get_save_path(self.RESOURCE_NAME)
             try:
                 ig.Graph.write_picklez(self._graph, graph_file_name)  # type: ignore
             except Exception as e:
@@ -188,8 +187,8 @@ class IGraphStorage(BaseGraphStorage[GTNode, GTEdge, GTId]):
 
     async def _query_start(self):
         assert self.namespace, "Loading a graph requires a namespace."
-        graph_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME)
-        if os.path.exists(graph_file_name):
+        graph_file_name = self.namespace.get_load_path(self.RESOURCE_NAME)
+        if graph_file_name:
             try:
                 self._graph = ig.Graph.Read_Picklez(graph_file_name)  # type: ignore
                 logger.debug(f"Loaded graph storage '{graph_file_name}'.")

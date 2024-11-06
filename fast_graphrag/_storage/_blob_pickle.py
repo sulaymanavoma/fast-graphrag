@@ -1,4 +1,3 @@
-import os
 import pickle
 from dataclasses import dataclass, field
 from typing import Optional
@@ -23,8 +22,8 @@ class PickleBlobStorage(BaseBlobStorage[GTBlob]):
 
     async def _insert_start(self):
         if self.namespace:
-            data_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME)
-            if os.path.exists(data_file_name):
+            data_file_name = self.namespace.get_load_path(self.RESOURCE_NAME)
+            if data_file_name:
                 try:
                     with open(data_file_name, "rb") as f:
                         self._data = pickle.load(f)
@@ -41,7 +40,7 @@ class PickleBlobStorage(BaseBlobStorage[GTBlob]):
 
     async def _insert_done(self):
         if self.namespace:
-            data_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME)
+            data_file_name = self.namespace.get_save_path(self.RESOURCE_NAME)
             try:
                 with open(data_file_name, "wb") as f:
                     pickle.dump(self._data, f)
@@ -54,8 +53,8 @@ class PickleBlobStorage(BaseBlobStorage[GTBlob]):
     async def _query_start(self):
         assert self.namespace, "Loading a blob storage requires a namespace."
 
-        data_file_name = self.namespace.get_resource_path(self.RESOURCE_NAME)
-        if os.path.exists(data_file_name):
+        data_file_name = self.namespace.get_load_path(self.RESOURCE_NAME)
+        if data_file_name:
             try:
                 with open(data_file_name, "rb") as f:
                     self._data = pickle.load(f)
