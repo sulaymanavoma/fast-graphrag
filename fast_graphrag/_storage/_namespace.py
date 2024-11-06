@@ -3,6 +3,7 @@ import shutil
 import time
 from typing import Any, Callable, List, Optional
 
+from fast_graphrag._exceptions import InvalidStorageError
 from fast_graphrag._utils import logger
 
 
@@ -75,6 +76,7 @@ class Workspace:
                     self.failed_checkpoints.append(str(self.current_load_checkpoint))
                 if self._rollback() is False:
                     break
+        raise InvalidStorageError("No valid checkpoints to load or default storages cannot be created.")
 
 
 class Namespace:

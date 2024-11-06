@@ -29,6 +29,7 @@ class BaseStorage:
                 )
                 logger.error(t)
                 await self._query_done()
+                self._in_progress = False
         self._mode = "insert"
 
         if self._in_progress is not True:
@@ -38,12 +39,13 @@ class BaseStorage:
     async def query_start(self):
         if self._mode == "insert":
             logger.info("Switching from insert to query mode.")
-            if self._in_progress:
+            if self._in_progress is not False:
                 t = (f"[{self.__class__.__name__}] Cannot being query before commiting insert operations."
                      "Committing insert operations now."
                 )
                 logger.error(t)
                 await self._insert_done()
+                self._in_progress = False
         self._mode = "query"
 
         if self._in_progress is not True:

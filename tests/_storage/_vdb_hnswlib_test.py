@@ -87,12 +87,11 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
         np.testing.assert_almost_equal(scores.data, np.array([0.95, 0.9, 0.85], dtype=np.float32))
 
     @patch("fast_graphrag._storage._vdb_hnswlib.hnswlib.Index")
-    @patch("os.path.exists", return_value=True)
     @patch("builtins.open", new_callable=mock_open, read_data=pickle.dumps(({"key": "value"}, 3)))
     @patch("fast_graphrag._storage._vdb_hnswlib.logger")
-    async def test_insert_start_with_existing_files(self, mock_logger, mock_open, mock_exists, mock_index):
+    async def test_insert_start_with_existing_files(self, mock_logger, mock_open, mock_index):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.side_effect = lambda x: f"dummy_path_{x}"
+        self.storage.namespace.get_load_path.side_effect = lambda x: f"dummy_path_{x}"
 
         await self.storage._insert_start()
 
@@ -105,11 +104,10 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
         mock_logger.debug.assert_called_with("Loaded 3 elements from vectordb storage 'dummy_path_hnsw_index_128.bin'.")
 
     @patch("fast_graphrag._storage._vdb_hnswlib.hnswlib.Index")
-    @patch("os.path.exists", return_value=False)
     @patch("fast_graphrag._storage._vdb_hnswlib.logger")
-    async def test_insert_start_with_no_files(self, mock_logger, mock_exists, mock_index):
+    async def test_insert_start_with_no_files(self, mock_logger, mock_index):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.side_effect = lambda x: f"dummy_path_{x}"
+        self.storage.namespace.get_load_path.return_value = None
 
         await self.storage._insert_start()
 
@@ -146,7 +144,7 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
     @patch("fast_graphrag._storage._vdb_hnswlib.logger")
     async def test_insert_done(self, mock_logger, mock_open, mock_index):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.side_effect = lambda x: f"dummy_path_{x}"
+        self.storage.namespace.get_save_path.side_effect = lambda x: f"dummy_path_{x}"
         self.storage._metadata = {"key": "value"}
         self.storage._current_elements = 3
 
@@ -157,12 +155,11 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
         mock_logger.debug.assert_called_with("Saving 3 elements from vectordb storage 'dummy_path_hnsw_index_128.bin'.")
 
     @patch("fast_graphrag._storage._vdb_hnswlib.hnswlib.Index")
-    @patch("os.path.exists", return_value=True)
     @patch("builtins.open", new_callable=mock_open, read_data=pickle.dumps(({"key": "value"}, 3)))
     @patch("fast_graphrag._storage._vdb_hnswlib.logger")
-    async def test_query_start_with_existing_files(self, mock_logger, mock_open, mock_exists, mock_index):
+    async def test_query_start_with_existing_files(self, mock_logger, mock_open, mock_index):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.side_effect = lambda x: f"dummy_path_{x}"
+        self.storage.namespace.get_load_path.side_effect = lambda x: f"dummy_path_{x}"
 
         await self.storage._query_start()
 
@@ -175,11 +172,10 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
         mock_logger.debug.assert_called_with("Loaded 3 elements from vectordb storage 'dummy_path_hnsw_index_128.bin'.")
 
     @patch("fast_graphrag._storage._vdb_hnswlib.hnswlib.Index")
-    @patch("os.path.exists", return_value=False)
     @patch("fast_graphrag._storage._vdb_hnswlib.logger")
-    async def test_query_start_with_no_files(self, mock_logger, mock_exists, mock_index):
+    async def test_query_start_with_no_files(self, mock_logger, mock_index):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.side_effect = lambda x: f"dummy_path_{x}"
+        self.storage.namespace.get_load_path.return_value = None
 
         await self.storage._query_start()
 
@@ -187,7 +183,7 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.storage._metadata, {})
         self.assertEqual(self.storage._current_elements, 0)
         mock_logger.warning.assert_called_with(
-            "No data file found for vectordb storage 'dummy_path_hnsw_index_128.bin'. Loading empty vectordb."
+            "No data file found for vectordb storage 'None'. Loading empty vectordb."
         )
 
     @patch("os.path.exists", return_value=True)
