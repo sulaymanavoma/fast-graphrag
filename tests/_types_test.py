@@ -120,7 +120,6 @@ class TestTypes(unittest.TestCase):
         max_chars = {"entities": 128, "relationships": 128, "chunks": 512}
         csv = context.to_str(max_chars.copy())
 
-        print(csv)
         csv_entities = re.findall(r"#Entities\n```csv\n(.*?)\n```", csv, re.DOTALL)
         csv_relationships = re.findall(r"#Relationships\n```csv\n(.*?)\n```", csv, re.DOTALL)
         csv_chunks = re.findall(r"#Sources\n```csv\n(.*?)\n```", csv, re.DOTALL)
