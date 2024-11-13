@@ -13,7 +13,7 @@ from fast_graphrag._policies._graph_upsert import (
     EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM,
     NodeUpsertPolicy_SummarizeDescription,
 )
-from fast_graphrag._policies._ranking import RankingPolicy_TopK, RankingPolicy_WithThreshold
+from fast_graphrag._policies._ranking import RankingPolicy_TopK
 from fast_graphrag._services import (
     BaseChunkingService,
     BaseInformationExtractionService,
@@ -29,6 +29,7 @@ from fast_graphrag._storage import (
     DefaultVectorStorage,
     DefaultVectorStorageConfig,
 )
+from fast_graphrag._storage._namespace import Workspace
 from fast_graphrag._types import TChunk, TEmbedding, TEntity, THash, TId, TIndex, TRelation
 
 from ._graphrag import BaseGraphRAG
@@ -72,14 +73,14 @@ class GraphRAG(BaseGraphRAG[TEmbedding, THash, TChunk, TEntity, TRelation, TId])
             default_factory=lambda: DefaultIndexedKeyValueStorage(None)
         )
 
-        entity_ranking_policy: RankingPolicy_WithThreshold = field(
-            default_factory=lambda: RankingPolicy_WithThreshold(RankingPolicy_WithThreshold.Config(threshold=0.05))
+        entity_ranking_policy: RankingPolicy_TopK = field(
+            default_factory=lambda: RankingPolicy_TopK(RankingPolicy_TopK.Config(top_k=8))
         )
         relation_ranking_policy: RankingPolicy_TopK = field(
-            default_factory=lambda: RankingPolicy_TopK(RankingPolicy_TopK.Config(top_k=10))
+            default_factory=lambda: RankingPolicy_TopK(RankingPolicy_TopK.Config(top_k=24))
         )
         chunk_ranking_policy: RankingPolicy_TopK = field(
-            default_factory=lambda: RankingPolicy_TopK(RankingPolicy_TopK.Config(top_k=20))
+            default_factory=lambda: RankingPolicy_TopK(RankingPolicy_TopK.Config(top_k=8))
         )
         node_upsert_policy: NodeUpsertPolicy_SummarizeDescription = field(
             default_factory=lambda: NodeUpsertPolicy_SummarizeDescription()
@@ -99,7 +100,7 @@ class GraphRAG(BaseGraphRAG[TEmbedding, THash, TChunk, TEntity, TRelation, TId])
             graph_upsert=self.config.information_extraction_upsert_policy
         )
         self.state_manager = self.config.state_manager_cls(
-            working_dir=self.working_dir,
+            workspace=Workspace.new(self.working_dir, keep_n=self.n_checkpoints),
             embedding_service=self.embedding_service,
             graph_storage=self.config.graph_storage,
             entity_storage=self.config.entity_storage,

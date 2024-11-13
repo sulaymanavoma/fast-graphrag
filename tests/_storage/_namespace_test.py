@@ -26,7 +26,7 @@ class TestWorkspace(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(ws.working_dir, self.test_dir)
 
     def test_get_load_path_no_checkpoint(self):
-        self.assertIsNone(self.workspace.get_load_path())
+        self.assertEqual(self.workspace.get_load_path(), "test_workspace")
 
     def test_get_save_path_creates_directory(self):
         save_path = self.workspace.get_save_path()
@@ -91,7 +91,7 @@ class TestNamespace(unittest.TestCase):
         self.workspace = Workspace(self.test_dir)
         self.workspace.__del__ = lambda: None
         self.namespace = Namespace(self.workspace, "test_namespace")
-        self.assertIsNone(self.namespace.get_load_path("resource"))
+        self.assertEqual("test_workspace\\test_namespace_resource", self.namespace.get_load_path("resource"))
         del self.workspace
         gc.collect()
         if os.path.exists(self.test_dir):

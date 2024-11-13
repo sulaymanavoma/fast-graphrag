@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import Any, Awaitable, Iterable, List, Optional, Tuple, Type
+from typing import Any, Awaitable, Iterable, List, Optional, Tuple, Type, cast
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -34,17 +34,17 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
     blob_storage_cls: Type[BaseBlobStorage[csr_matrix]] = field(default=PickleBlobStorage)
 
     def __post_init__(self):
-        self._workspace = Workspace.new(working_dir=self.working_dir)
+        assert self.workspace is not None, "Workspace must be provided."
 
-        self.graph_storage.namespace = self._workspace.make_for("graph")
-        self.entity_storage.namespace = self._workspace.make_for("entities")
-        self.chunk_storage.namespace = self._workspace.make_for("chunks")
+        self.graph_storage.namespace = self.workspace.make_for("graph")
+        self.entity_storage.namespace = self.workspace.make_for("entities")
+        self.chunk_storage.namespace = self.workspace.make_for("chunks")
 
         self._entities_to_relationships: BaseBlobStorage[csr_matrix] = self.blob_storage_cls(
-            namespace=self._workspace.make_for("map_e2r"), config=None
+            namespace=self.workspace.make_for("map_e2r"), config=None
         )
         self._relationships_to_chunks: BaseBlobStorage[csr_matrix] = self.blob_storage_cls(
-            namespace=self._workspace.make_for("map_r2c"), config=None
+            namespace=self.workspace.make_for("map_r2c"), config=None
         )
 
     async def filter_new_chunks(self, chunks_per_data: Iterable[Iterable[TChunk]]) -> List[List[TChunk]]:
@@ -227,7 +227,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
                 tasks.append(storage_inst.query_start())
             return asyncio.gather(*tasks)
 
-        await self._workspace.with_checkpoints(_fn)
+        await cast(Workspace, self.workspace).with_checkpoints(_fn)
 
         for storage_inst in storages:
             storage_inst.set_in_progress(True)
@@ -263,7 +263,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
                 tasks.append(storage_inst.insert_start())
             return asyncio.gather(*tasks)
 
-        await self._workspace.with_checkpoints(_fn)
+        await cast(Workspace, self.workspace).with_checkpoints(_fn)
 
         for storage_inst in storages:
             storage_inst.set_in_progress(True)

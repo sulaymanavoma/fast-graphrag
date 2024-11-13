@@ -9,10 +9,18 @@ from fast_graphrag._utils import logger
 
 class Workspace:
     @staticmethod
-    def new(working_dir: str, checkpoint: Optional[int] = None, keep_n: int = 0) -> "Workspace":
+    def new(working_dir: str, checkpoint: int = 0, keep_n: int = 0) -> "Workspace":
         return Workspace(working_dir, checkpoint, keep_n)
 
-    def __init__(self, working_dir: str, checkpoint: Optional[int] = None, keep_n: int = 0):
+    @staticmethod
+    def get_path(working_dir: str, checkpoint: Optional[int] = None) -> Optional[str]:
+        if checkpoint is None:
+            return None
+        elif checkpoint == 0:
+            return working_dir
+        return os.path.join(working_dir, str(checkpoint))
+
+    def __init__(self, working_dir: str, checkpoint: int = 0, keep_n: int = 0):
         self.working_dir: str = working_dir
         self.keep_n: int = keep_n
         if not os.path.exists(working_dir):
@@ -22,7 +30,10 @@ class Workspace:
             (int(x.name) for x in os.scandir(self.working_dir) if x.is_dir() and not x.name.startswith("0__err_")),
             reverse=True,
         )
-        self.current_load_checkpoint: Optional[int] = checkpoint or (self.checkpoints[0] if self.checkpoints else None)
+        if self.checkpoints:
+            self.current_load_checkpoint = checkpoint if checkpoint else self.checkpoints[0]
+        else:
+            self.current_load_checkpoint = checkpoint
         self.save_checkpoint: Optional[int] = None
         self.failed_checkpoints: List[str] = []
 
@@ -41,9 +52,7 @@ class Workspace:
         return Namespace(self, namespace)
 
     def get_load_path(self) -> Optional[str]:
-        if self.current_load_checkpoint is None:
-            return None
-        return os.path.join(self.working_dir, str(self.current_load_checkpoint))
+        return self.get_path(self.working_dir, self.current_load_checkpoint)
 
     def get_save_path(self) -> str:
         if self.save_checkpoint is None:
@@ -51,9 +60,13 @@ class Workspace:
                 self.save_checkpoint = int(time.time())
             else:
                 self.save_checkpoint = 0
-            if not os.path.exists(os.path.join(self.working_dir, str(self.save_checkpoint))):
-                os.makedirs(os.path.join(self.working_dir, str(self.save_checkpoint)))
-        return os.path.join(self.working_dir, str(self.save_checkpoint))
+        save_path = self.get_path(self.working_dir, self.save_checkpoint)
+
+        assert save_path is not None, "Save path cannot be None."
+
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        return os.path.join(save_path)
 
     def _rollback(self) -> bool:
         if self.current_load_checkpoint is None:

@@ -63,8 +63,7 @@ class BaseInformationExtractionService(Generic[GTChunk, GTNode, GTEdge, GTId]):
 class BaseStateManagerService(Generic[GTNode, GTEdge, GTHash, GTChunk, GTId, GTEmbedding]):
     """A class for managing state operations."""
 
-    _workspace: Workspace = field(init=False)
-    working_dir: str = field()
+    workspace: Optional[Workspace] = field()
 
     graph_storage: BaseGraphStorage[GTNode, GTEdge, GTId] = field()
     entity_storage: BaseVectorStorage[TIndex, GTEmbedding] = field()

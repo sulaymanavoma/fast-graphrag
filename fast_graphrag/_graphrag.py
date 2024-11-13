@@ -23,6 +23,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
     domain: str = field()
     example_queries: str = field()
     entity_types: List[str] = field()
+    n_checkpoints: int = field(default=0)
 
     llm_service: BaseLLMService = field(init=False, default_factory=lambda: BaseLLMService())
     chunking_service: BaseChunkingService[GTChunk] = field(init=False, default_factory=lambda: BaseChunkingService())
@@ -39,7 +40,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
     state_manager: BaseStateManagerService[GTNode, GTEdge, GTHash, GTChunk, GTId, GTEmbedding] = field(
         init=False,
         default_factory=lambda: BaseStateManagerService(
-            working_dir="",
+            workspace=None,
             graph_storage=BaseGraphStorage[GTNode, GTEdge, GTId](config=None),
             entity_storage=BaseVectorStorage[GTId, GTEmbedding](config=None),
             chunk_storage=BaseIndexedKeyValueStorage[GTHash, GTChunk](config=None),
