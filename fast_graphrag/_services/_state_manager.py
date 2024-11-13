@@ -102,14 +102,15 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         self, query: str, entities: Iterable[TEntity]
     ) -> Optional[TContext[TEntity, TRelation, THash, TChunk]]:
         try:
-            entity_names = [entity.name for entity in entities]
-            if len(entity_names) == 0:
-                return None
+            # entity_names = [entity.name for entity in entities]
+            # if len(entity_names) == 0:
+            #     return None
 
-            query_embeddings = await self.embedding_service.get_embedding(entity_names)
+            # query_embeddings = await self.embedding_service.get_embedding(entity_names)
+            query_embeddings = await self.embedding_service.get_embedding([query])
 
             # Similarity-search over entities
-            vdb_entity_scores = await self._score_entities_by_vectordb(query_embeddings=query_embeddings, top_k=1)
+            vdb_entity_scores = await self._score_entities_by_vectordb(query_embeddings=query_embeddings, top_k=10)
 
             if vdb_entity_scores.nnz == 0:
                 return None
