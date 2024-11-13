@@ -124,11 +124,11 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         try:
             # Extract entities from query
             extracted_entities = await self.information_extraction_service.extract_entities_from_query(
-                llm=self.llm_service, query=query, prompt_kwargs={"domain": self.domain}
+                llm=self.llm_service, query=query, prompt_kwargs={}
             )
 
             # Retrieve relevant state
-            relevant_state = await self.state_manager.get_context(entities=extracted_entities)
+            relevant_state = await self.state_manager.get_context(query=query, entities=extracted_entities)
             if relevant_state is None:
                 return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](
                     response=PROMPTS["fail_response"], context=TContext([], [], [])
