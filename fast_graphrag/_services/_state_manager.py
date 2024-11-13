@@ -167,8 +167,9 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         raise NotImplementedError
 
     async def _score_entities_by_vectordb(self, query_embeddings: Iterable[TEmbedding], top_k: int = 1) -> csr_matrix:
-        if top_k != 1:
-            logger.warning(f"Top-k > 1 is not tested yet. Using top_k={top_k}.")
+        # TODO: check this
+        # if top_k != 1:
+        #     logger.warning(f"Top-k > 1 is not tested yet. Using top_k={top_k}.")
         if self.node_specificity:
             raise NotImplementedError("Node specificity is not supported yet.")
 
