@@ -12,7 +12,7 @@ from fast_graphrag._services._information_extraction import BaseInformationExtra
 from fast_graphrag._services._state_manager import BaseStateManagerService
 from fast_graphrag._storage._base import BaseGraphStorage, BaseIndexedKeyValueStorage, BaseVectorStorage
 from fast_graphrag._types import GTChunk, GTEdge, GTEmbedding, GTHash, GTId, GTNode, TContext, TDocument, TQueryResponse
-from fast_graphrag._utils import get_event_loop, logger
+from fast_graphrag._utils import TOKEN_TO_CHAR_RATIO, get_event_loop, logger
 
 
 @dataclass
@@ -139,7 +139,16 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
             llm_response, _ = await format_and_send_prompt(
                 prompt_key="generate_response_query",
                 llm=self.llm_service,
-                format_kwargs={"query": query, "context": relevant_state.to_str()},
+                format_kwargs={
+                    "query": query,
+                    "context": relevant_state.to_str(
+                        {
+                            "entities": 4000 * TOKEN_TO_CHAR_RATIO,
+                            "relationships": 3000 * TOKEN_TO_CHAR_RATIO,
+                            "chunks": 9000 * TOKEN_TO_CHAR_RATIO,
+                        }
+                    ),
+                },
                 response_model=str,
             )
 

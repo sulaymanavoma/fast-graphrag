@@ -1,4 +1,5 @@
 # type: ignore
+import re
 import unittest
 from dataclasses import asdict
 
@@ -98,14 +99,39 @@ class TestTypes(unittest.TestCase):
         self.assertEqual(edit_relationship_list.groups, [edit_relationship])
 
     def test_tcontext(self):
+        entities = [TEntity(name="Entity1", type="Type1", description="Sample description 1")] * 8 + [
+            TEntity(name="Entity2", type="Type2", description="Sample description 2")
+        ] * 8
+        relationships = [TRelation(source="Entity1", target="Entity2", description="Relation description 12")] * 8 + [
+            TRelation(source="Entity2", target="Entity1", description="Relation description 21")
+        ] * 8
+        chunks = [
+            TChunk(id=i, content=f"Long and repeated chunk content {i}" * 4, metadata={"key": f"value {i}"})
+            for i in range(16)
+        ]
+
+        for r, c in zip(relationships, chunks):
+            r.chunks = [c.id]
         context = TContext(
-            entities=[("Entity1", TScore(0.9))],
-            relationships=[("Relation1", TScore(0.8))],
-            chunks=[("Chunk1", TScore(0.7))],
+            entities=[(e, TScore(0.9)) for e in entities],
+            relationships=[(r, TScore(0.8)) for r in relationships],
+            chunks=[(c, TScore(0.7)) for c in chunks],
         )
-        self.assertEqual(context.entities, [("Entity1", TScore(0.9))])
-        self.assertEqual(context.relationships, [("Relation1", TScore(0.8))])
-        self.assertEqual(context.chunks, [("Chunk1", TScore(0.7))])
+        max_chars = {"entities": 128, "relationships": 128, "chunks": 512}
+        csv = context.to_str(max_chars.copy())
+
+        print(csv)
+        csv_entities = re.findall(r"#Entities\n```csv\n(.*?)\n```", csv, re.DOTALL)
+        csv_relationships = re.findall(r"#Relationships\n```csv\n(.*?)\n```", csv, re.DOTALL)
+        csv_chunks = re.findall(r"#Sources\n```csv\n(.*?)\n```", csv, re.DOTALL)
+
+        self.assertEqual(len(csv_entities), 1)
+        self.assertEqual(len(csv_relationships), 1)
+        self.assertEqual(len(csv_chunks), 1)
+
+        self.assertGreaterEqual(
+            sum(max_chars.values()), len(csv_entities[0]) + len(csv_relationships[0]) + len(csv_chunks[0])
+        )
 
     def test_tqueryresponse(self):
         context = TContext(
@@ -122,7 +148,7 @@ class TestTypes(unittest.TestCase):
         fields = ["name", "type"]
         values = {"score": [0.9]}
         csv_output = dump_to_csv(data, fields, with_header=True, **values)
-        expected_output = "```csv\nname;;type;;score\nSample name;;SAMPLE TYPE;;0.9\n```"
+        expected_output = ["name;;type;;score", "Sample name;;SAMPLE TYPE;;0.9"]
         self.assertEqual(csv_output, expected_output)
 
 

@@ -86,15 +86,22 @@ def dump_to_csv(
     separator: str = ";;",
     with_header: bool = False,
     **values: Dict[str, List[Any]],
-) -> str:
-    rows = chain(
-        (separator.join(chain(fields, values.keys())),) if with_header else (),
+) -> List[str]:
+    rows = list(
         chain(
-            separator.join(chain((str(getattr(d, field)) for field in fields), (str(v) for v in vs),))
-            for d, *vs in zip(data, *values.values())
-        ),
+            (separator.join(chain(fields, values.keys())),) if with_header else (),
+            chain(
+                separator.join(
+                    chain(
+                        (str(getattr(d, field)) for field in fields),
+                        (str(v) for v in vs),
+                    )
+                )
+                for d, *vs in zip(data, *values.values())
+            ),
+        )
     )
-    return "\n".join(chain(["```csv"], rows, ["```"]))
+    return rows
 
 
 # Embedding types
@@ -238,37 +245,84 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
     relationships: List[Tuple[GTEdge, TScore]]
     chunks: List[Tuple[GTChunk, TScore]]
 
-    def to_str(self) -> str:
+    def to_str(self, max_chars: Dict[str, int]) -> str:
         """Convert the context to a string representation."""
+        csv_tables: Dict[str, List[str]] = {
+            "entities": dump_to_csv([e for e, _ in self.entities], ["name", "description"], with_header=True),
+            "relationships": dump_to_csv(
+            [r for r, _ in self.relationships], ["source", "target", "description"], with_header=True
+        ),
+            "chunks": dump_to_csv([c for c, _ in self.chunks], ["content"], with_header=True),
+        }
+        csv_tables_row_length = {k: [len(row) for row in table] for k, table in csv_tables.items()}
+
+        include_up_to = {
+            "entities": 0,
+            "relationships": 0,
+            "chunks": 0,
+        }
+
+        # Truncate each csv to the maximum number of assigned tokens
+        chars_remainder = 0
+        while True:
+            last_char_remainder = chars_remainder
+            # Keep augmenting the context until feasible
+            for table in csv_tables:
+                for i in range(include_up_to[table], len(csv_tables_row_length[table])):
+                    length = csv_tables_row_length[table][i] + 1  # +1 for the newline character
+                    if length <= chars_remainder:  # use up the remainder
+                        include_up_to[table] += 1
+                        chars_remainder -= length
+                    elif length <= max_chars[table]:  # use up the assigned tokens
+                        include_up_to[table] += 1
+                        max_chars[table] -= length
+                    else:
+                        break
+
+                if max_chars[table] >= 0:  # if the assigned tokens are not used up store in the remainder
+                    chars_remainder += max_chars[table]
+                    max_chars[table] = 0
+
+            # Truncate the csv
+            if chars_remainder == last_char_remainder:
+                break
+
         data: List[str] = []
         if len(self.entities):
             data.extend(
                 [
-                    "#Entities",
-                    dump_to_csv([e for e, _ in self.entities], ["name", "description"], with_header=True),
-                    "\n",
+                    "\n#Entities",
+                    "```csv",
+                    *csv_tables["entities"][: include_up_to["entities"]],
+                    "```",
                 ]
             )
         else:
-            data.append("#Entities: None\n")
+            data.append("\n#Entities: None\n")
 
         if len(self.relationships):
             data.extend(
                 [
-                    "#Relationships",
-                    dump_to_csv(
-                        [r for r, _ in self.relationships], ["source", "target", "description"], with_header=True
-                    ),
-                    "\n",
+                    "\n#Relationships",
+                    "```csv",
+                    *csv_tables["relationships"][: include_up_to["relationships"]],
+                    "```",
                 ]
             )
         else:
-            data.append("#Relationships: None\n")
+            data.append("\n\n#Relationships: None\n")
 
         if len(self.chunks):
-            data.extend(["#Text chunks", dump_to_csv([c for c, _ in self.chunks], ["content"], with_header=True), "\n"])
+            data.extend(
+                [
+                    "\n\n#Sources",
+                    "```csv",
+                    *csv_tables["chunks"][: include_up_to["chunks"]],
+                    "```",
+                ]
+            )
         else:
-            data.append("#Text chunks: None\n")
+            data.append("\n\n#Sources: None\n")
         return "\n".join(data)
 
 
