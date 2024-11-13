@@ -124,7 +124,7 @@ class BaseStateManagerService(Generic[GTNode, GTEdge, GTHash, GTChunk, GTId, GTE
         raise NotImplementedError
 
     async def get_context(
-        self, entities: Iterable[TEntity]
+        self, query: str, entities: Iterable[TEntity]
     ) -> Optional[TContext[GTNode, GTEdge, GTHash, GTChunk]]:
         """Retrieve relevant state from the storage."""
         raise NotImplementedError
