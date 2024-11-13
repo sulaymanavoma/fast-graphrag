@@ -9,10 +9,10 @@ from fast_graphrag._utils import logger
 
 class Workspace:
     @staticmethod
-    def new(working_dir: str, checkpoint: Optional[int] = None, keep_n: int = 3) -> "Workspace":
+    def new(working_dir: str, checkpoint: Optional[int] = None, keep_n: int = 0) -> "Workspace":
         return Workspace(working_dir, checkpoint, keep_n)
 
-    def __init__(self, working_dir: str, checkpoint: Optional[int] = None, keep_n: int = 3):
+    def __init__(self, working_dir: str, checkpoint: Optional[int] = None, keep_n: int = 0):
         self.working_dir: str = working_dir
         self.keep_n: int = keep_n
         if not os.path.exists(working_dir):
@@ -47,7 +47,10 @@ class Workspace:
 
     def get_save_path(self) -> str:
         if self.save_checkpoint is None:
-            self.save_checkpoint = int(time.time())
+            if self.keep_n > 0:
+                self.save_checkpoint = int(time.time())
+            else:
+                self.save_checkpoint = 0
             if not os.path.exists(os.path.join(self.working_dir, str(self.save_checkpoint))):
                 os.makedirs(os.path.join(self.working_dir, str(self.save_checkpoint)))
         return os.path.join(self.working_dir, str(self.save_checkpoint))
