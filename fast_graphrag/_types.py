@@ -90,11 +90,11 @@ def dump_to_csv(
     rows = chain(
         (separator.join(chain(fields, values.keys())),) if with_header else (),
         chain(
-            separator.join(chain((str(getattr(d, field)) for field in fields), (str(v) for v in vs)))
+            separator.join(chain((str(getattr(d, field)) for field in fields), (str(v) for v in vs),))
             for d, *vs in zip(data, *values.values())
         ),
     )
-    return "\n".join(rows)
+    return "\n".join(chain(["```csv"], rows, ["```"]))
 
 
 # Embedding types
@@ -132,7 +132,7 @@ class TEntity(BTResponseModel, BTNode):
     description: str = Field()
 
     def to_str(self) -> str:
-        return f"{self.name} ({self.type}): {self.description}"
+        return f"{self.name}: {self.description}"
 
     class Model(BTResponseModel.Model, metaclass=MetaModel, alias="Entity"):
         name: str = Field(..., description="The name of the entity.")
@@ -242,19 +242,23 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
         """Convert the context to a string representation."""
         data: List[str] = []
         if len(self.entities):
-            e, es = zip(*self.entities)
             data.extend(
-                ["#Entities", dump_to_csv(e, ["name", "type", "description"], relevance=es, with_header=True), "\n"]
+                [
+                    "#Entities",
+                    dump_to_csv([e for e, _ in self.entities], ["name", "description"], with_header=True),
+                    "\n",
+                ]
             )
         else:
             data.append("#Entities: None\n")
 
         if len(self.relationships):
-            r, rs = zip(*self.relationships)
             data.extend(
                 [
                     "#Relationships",
-                    dump_to_csv(r, ["source", "target", "description"], relevance=rs, with_header=True),
+                    dump_to_csv(
+                        [r for r, _ in self.relationships], ["source", "target", "description"], with_header=True
+                    ),
                     "\n",
                 ]
             )
@@ -262,8 +266,7 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
             data.append("#Relationships: None\n")
 
         if len(self.chunks):
-            c, cs = zip(*self.chunks)
-            data.extend(["#Text chunks", dump_to_csv(c, ["content"], relevance=cs, with_header=True), "\n"])
+            data.extend(["#Text chunks", dump_to_csv([c for c, _ in self.chunks], ["content"], with_header=True), "\n"])
         else:
             data.append("#Text chunks: None\n")
         return "\n".join(data)

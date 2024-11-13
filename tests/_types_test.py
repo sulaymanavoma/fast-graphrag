@@ -122,7 +122,7 @@ class TestTypes(unittest.TestCase):
         fields = ["name", "type"]
         values = {"score": [0.9]}
         csv_output = dump_to_csv(data, fields, with_header=True, **values)
-        expected_output = "name;;type;;score\nSample name;;SAMPLE TYPE;;0.9"
+        expected_output = "```csv\nname;;type;;score\nSample name;;SAMPLE TYPE;;0.9\n```"
         self.assertEqual(csv_output, expected_output)
 
 

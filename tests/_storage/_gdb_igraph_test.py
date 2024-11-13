@@ -137,29 +137,27 @@ class TestIGraphStorage(unittest.IsolatedAsyncioTestCase):
         result = await self.storage.get_relationships_attrs("key")
         self.assertEqual(result, [[1, 2], [3, 4]])
 
-    @patch("os.path.exists", return_value=True)
     @patch("igraph.Graph.Read_Picklez")
     @patch("fast_graphrag._storage._gdb_igraph.logger")
-    async def test_insert_start_with_existing_file(self, mock_logger, mock_read_picklez, mock_exists):
+    async def test_insert_start_with_existing_file(self, mock_logger, mock_read_picklez):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_load_path.return_value = "dummy_path"
 
         await self.storage._insert_start()
 
         mock_read_picklez.assert_called_with("dummy_path")
         mock_logger.debug.assert_called_with("Loaded graph storage 'dummy_path'.")
 
-    @patch("os.path.exists", return_value=False)
     @patch("igraph.Graph")
     @patch("fast_graphrag._storage._gdb_igraph.logger")
-    async def test_insert_start_with_no_file(self, mock_logger, mock_graph, mock_exists):
+    async def test_insert_start_with_no_file(self, mock_logger, mock_graph):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_load_path.return_value = None
 
         await self.storage._insert_start()
 
         mock_graph.assert_called_with(directed=False)
-        mock_logger.info.assert_called_with("No data file found for graph storage 'dummy_path'. Loading empty graph.")
+        mock_logger.info.assert_called_with("No data file found for graph storage 'None'. Loading empty graph.")
 
     @patch("igraph.Graph")
     @patch("fast_graphrag._storage._gdb_igraph.logger")
@@ -175,36 +173,34 @@ class TestIGraphStorage(unittest.IsolatedAsyncioTestCase):
     @patch("fast_graphrag._storage._gdb_igraph.logger")
     async def test_insert_done(self, mock_logger, mock_write_picklez):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_save_path.return_value = "dummy_path"
 
         await self.storage._insert_done()
 
         mock_write_picklez.assert_called_with(self.storage._graph, "dummy_path")
 
-    @patch("os.path.exists", return_value=True)
     @patch("igraph.Graph.Read_Picklez")
     @patch("fast_graphrag._storage._gdb_igraph.logger")
-    async def test_query_start_with_existing_file(self, mock_logger, mock_read_picklez, mock_exists):
+    async def test_query_start_with_existing_file(self, mock_logger, mock_read_picklez):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_load_path.return_value = "dummy_path"
 
         await self.storage._query_start()
 
         mock_read_picklez.assert_called_with("dummy_path")
         mock_logger.debug.assert_called_with("Loaded graph storage 'dummy_path'.")
 
-    @patch("os.path.exists", return_value=False)
     @patch("igraph.Graph")
     @patch("fast_graphrag._storage._gdb_igraph.logger")
-    async def test_query_start_with_no_file(self, mock_logger, mock_graph, mock_exists):
+    async def test_query_start_with_no_file(self, mock_logger, mock_graph):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_load_path.return_value = None
 
         await self.storage._query_start()
 
         mock_graph.assert_called_with(directed=False)
         mock_logger.warning.assert_called_with(
-            "No data file found for graph storage 'dummy_path'. Loading empty graph."
+            "No data file found for graph storage 'None'. Loading empty graph."
         )
 
 

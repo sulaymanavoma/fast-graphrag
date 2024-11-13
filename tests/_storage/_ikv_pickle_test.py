@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import numpy as np
 
+from fast_graphrag._exceptions import InvalidStorageError
 from fast_graphrag._storage._ikv_pickle import PickleIndexedKeyValueStorage
 
 
@@ -57,7 +58,7 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
     @patch("fast_graphrag._storage._ikv_pickle.logger")
     async def test_insert_start_with_existing_file(self, mock_logger, mock_exists, mock_open):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_load_path.return_value = "dummy_path"
 
         # Call the function
         await self.storage._insert_start()
@@ -66,23 +67,16 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.storage._data, {0: "value"})
         self.assertEqual(self.storage._free_indices, [1, 2, 3])
         self.assertEqual(self.storage._key_to_index, {"key": 0})
-        mock_logger.debug.assert_called_with("Loaded 1 elements from indexed key-value storage 'dummy_path'.")
+        mock_logger.debug.assert_called_once()
 
-    @patch("os.path.exists", return_value=False)
     @patch("fast_graphrag._storage._ikv_pickle.logger")
-    async def test_insert_start_with_no_file(self, mock_logger, mock_exists):
+    async def test_insert_start_with_no_file(self, mock_logger):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_load_path.return_value = "dummy_path"
 
         # Call the function
-        await self.storage._insert_start()
-
-        # Check if data was initialized correctly
-        self.assertEqual(self.storage._data, {})
-        self.assertEqual(self.storage._free_indices, [])
-        mock_logger.info.assert_called_with(
-            "No data file found for key-vector storage 'dummy_path'. Loading empty storage."
-        )
+        with self.assertRaises(InvalidStorageError):
+            await self.storage._insert_start()
 
     @patch("fast_graphrag._storage._ikv_pickle.logger")
     async def test_insert_start_with_no_namespace(self, mock_logger):
@@ -100,7 +94,7 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
     @patch("fast_graphrag._storage._ikv_pickle.logger")
     async def test_insert_done(self, mock_logger, mock_open):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_save_path.return_value = "dummy_path"
         self.storage._data = {0: "value"}
         self.storage._free_indices = [1, 2, 3]
         self.storage._key_to_index = {"key": 0}
@@ -117,7 +111,7 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
     @patch("fast_graphrag._storage._ikv_pickle.logger")
     async def test_query_start_with_existing_file(self, mock_logger, mock_exists, mock_open):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_load_path.return_value = "dummy_path"
 
         # Call the function
         await self.storage._query_start()
@@ -132,7 +126,7 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
     @patch("fast_graphrag._storage._ikv_pickle.logger")
     async def test_query_start_with_no_file(self, mock_logger, mock_exists):
         self.storage.namespace = MagicMock()
-        self.storage.namespace.get_resource_path.return_value = "dummy_path"
+        self.storage.namespace.get_load_path.return_value = None
 
         # Call the function
         await self.storage._query_start()
@@ -141,7 +135,7 @@ class TestPickleIndexedKeyValueStorage(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.storage._data, {})
         self.assertEqual(self.storage._free_indices, [])
         mock_logger.warning.assert_called_with(
-            "No data file found for key-vector storage 'dummy_path'. Loading empty storage."
+            "No data file found for key-vector storage 'None'. Loading empty storage."
         )
 
 

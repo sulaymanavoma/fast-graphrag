@@ -1,8 +1,7 @@
 import asyncio
-import os
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import Any, Awaitable, Iterable, List, Optional, Tuple, Type
+from typing import Any, Awaitable, Iterable, List, Optional, Tuple, Type, cast
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -12,9 +11,9 @@ from fast_graphrag._storage._base import (
     BaseBlobStorage,
     BaseGraphStorage,
     BaseStorage,
-    Namespace,
 )
 from fast_graphrag._storage._blob_pickle import PickleBlobStorage
+from fast_graphrag._storage._namespace import Workspace
 from fast_graphrag._types import (
     TChunk,
     TContext,
@@ -35,19 +34,17 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
     blob_storage_cls: Type[BaseBlobStorage[csr_matrix]] = field(default=PickleBlobStorage)
 
     def __post_init__(self):
-        self._namespace = Namespace.new(working_dir=self.working_dir)
-        if not os.path.exists(self._namespace.working_dir):
-            os.makedirs(self._namespace.working_dir)
+        assert self.workspace is not None, "Workspace must be provided."
 
-        self.graph_storage.namespace = self._namespace.make_for("graph")
-        self.entity_storage.namespace = self._namespace.make_for("entities")
-        self.chunk_storage.namespace = self._namespace.make_for("chunks")
+        self.graph_storage.namespace = self.workspace.make_for("graph")
+        self.entity_storage.namespace = self.workspace.make_for("entities")
+        self.chunk_storage.namespace = self.workspace.make_for("chunks")
 
         self._entities_to_relationships: BaseBlobStorage[csr_matrix] = self.blob_storage_cls(
-            namespace=self._namespace.make_for("map_e2r"), config=None
+            namespace=self.workspace.make_for("map_e2r"), config=None
         )
         self._relationships_to_chunks: BaseBlobStorage[csr_matrix] = self.blob_storage_cls(
-            namespace=self._namespace.make_for("map_r2c"), config=None
+            namespace=self.workspace.make_for("map_r2c"), config=None
         )
 
     async def filter_new_chunks(self, chunks_per_data: Iterable[Iterable[TChunk]]) -> List[List[TChunk]]:
@@ -90,12 +87,8 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
         nodes, edges = zip(*graphs)
 
-        _, upserted_nodes = await self.node_upsert_policy(
-            llm, self.graph_storage, chain(*nodes)
-        )
-        _, _ = await self.edge_upsert_policy(
-            llm, self.graph_storage, chain(*edges)
-        )
+        _, upserted_nodes = await self.node_upsert_policy(llm, self.graph_storage, chain(*nodes))
+        _, _ = await self.edge_upsert_policy(llm, self.graph_storage, chain(*edges))
 
         # Insert entities in entity_storage
         embeddings = await self.embedding_service.get_embedding(texts=[d.to_str() for _, d in upserted_nodes])
@@ -105,16 +98,19 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         flattened_chunks = [chunk for chunks in documents for chunk in chunks]
         await self.chunk_storage.upsert(keys=[chunk.id for chunk in flattened_chunks], values=flattened_chunks)
 
-    async def get_context(self, entities: Iterable[TEntity]) -> Optional[TContext[TEntity, TRelation, THash, TChunk]]:
+    async def get_context(
+        self, query: str, entities: Iterable[TEntity]
+    ) -> Optional[TContext[TEntity, TRelation, THash, TChunk]]:
         try:
-            entity_names = [entity.name for entity in entities]
-            if len(entity_names) == 0:
-                return None
+            # entity_names = [entity.name for entity in entities]
+            # if len(entity_names) == 0:
+            #     return None
 
-            query_embeddings = await self.embedding_service.get_embedding(entity_names)
+            # query_embeddings = await self.embedding_service.get_embedding(entity_names)
+            query_embeddings = await self.embedding_service.get_embedding([query])
 
             # Similarity-search over entities
-            vdb_entity_scores = await self._score_entities_by_vectordb(query_embeddings=query_embeddings)
+            vdb_entity_scores = await self._score_entities_by_vectordb(query_embeddings=query_embeddings, top_k=10)
 
             if vdb_entity_scores.nnz == 0:
                 return None
@@ -172,7 +168,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
     async def _score_entities_by_vectordb(self, query_embeddings: Iterable[TEmbedding], top_k: int = 1) -> csr_matrix:
         if top_k != 1:
-            raise NotImplementedError("Top-k != 1 is not supported yet.")
+            logger.warning(f"Top-k > 1 is not tested yet. Using top_k={top_k}.")
         if self.node_specificity:
             raise NotImplementedError("Node specificity is not supported yet.")
 
@@ -217,7 +213,6 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
     ####################################################################################################
 
     async def query_start(self):
-        tasks: List[Awaitable[Any]] = []
         storages: List[BaseStorage] = [
             self.graph_storage,
             self.entity_storage,
@@ -225,9 +220,17 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
             self._relationships_to_chunks,
             self._entities_to_relationships,
         ]
+
+        def _fn():
+            tasks: List[Awaitable[Any]] = []
+            for storage_inst in storages:
+                tasks.append(storage_inst.query_start())
+            return asyncio.gather(*tasks)
+
+        await cast(Workspace, self.workspace).with_checkpoints(_fn)
+
         for storage_inst in storages:
-            tasks.append(storage_inst.query_start())
-        await asyncio.gather(*tasks)
+            storage_inst.set_in_progress(True)
 
     async def query_done(self):
         tasks: List[Awaitable[Any]] = []
@@ -242,8 +245,10 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
             tasks.append(storage_inst.query_done())
         await asyncio.gather(*tasks)
 
+        for storage_inst in storages:
+            storage_inst.set_in_progress(False)
+
     async def insert_start(self):
-        tasks: List[Awaitable[Any]] = []
         storages: List[BaseStorage] = [
             self.graph_storage,
             self.entity_storage,
@@ -251,9 +256,17 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
             self._relationships_to_chunks,
             self._entities_to_relationships,
         ]
+
+        def _fn():
+            tasks: List[Awaitable[Any]] = []
+            for storage_inst in storages:
+                tasks.append(storage_inst.insert_start())
+            return asyncio.gather(*tasks)
+
+        await cast(Workspace, self.workspace).with_checkpoints(_fn)
+
         for storage_inst in storages:
-            tasks.append(storage_inst.insert_start())
-        await asyncio.gather(*tasks)
+            storage_inst.set_in_progress(True)
 
     async def insert_done(self):
         await self._entities_to_relationships.set(await self.graph_storage.get_entities_to_relationships_map())
@@ -281,3 +294,6 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         for storage_inst in storages:
             tasks.append(storage_inst.insert_done())
         await asyncio.gather(*tasks)
+
+        for storage_inst in storages:
+            storage_inst.set_in_progress(False)
