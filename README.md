@@ -101,6 +101,10 @@ print(grag.query("Who is Scrooge?").response)
 
 The next time you initialize fast-graphrag from the same working directory, it will retain all the knowledge automatically.
 
+## Examples
+Please refer to the `examples` folder for a list of tutorial on common use cases of the library:
+- `custom_llm.py`: a brief example on how to configure fast-graphrag to run with different OpenAI API compatible language models and embedders.
+
 ## Contributing
 
 Whether it's big or small, we love contributions. Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated. Check out our [guide](https://github.com/circlemind-ai/fast-graphrag/blob/main/CONTRIBUTING.md) to see how to get started.
