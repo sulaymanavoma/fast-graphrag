@@ -18,16 +18,8 @@ Examples of possible domain-specific questions:
 {example_queries}
 
 # STEPS
-1. Identify all entities. Make sure to identify all relevant entities. Make sure to resolve pronouns to their specific named entities. For each identified entity, extract the following information:
-- name: name of the entity, capitalized
-- type: one of the provided entity types
-- description: description of the entity's attributes and activities
-
-2. From the entities identified in step 1, identify all relationships between pairs of (source_entity, target_entity). Make sure to identify all relevant relationships.
-For each pair of related entities, extract the following information:
-- source_entity: name of the source entity, as identified in step 1
-- target_entity: name of the target entity, as identified in step 1
-- description: explanation of the relationship connecting the source_entity and the target_entity
+1. Identify all entities. Make sure to identify all relevant entities. Make sure to resolve pronouns to their specific named entities.
+2. From the entities identified in step 1, identify all relationships between pairs of (source_entity, target_entity).
 
 # EXAMPLE DATA
 Entity types: [person, role, technology, organization, event, location, concept]
@@ -110,19 +102,19 @@ PROMPTS["entity_relationship_gleaning_done_extraction"] = "Retrospectively check
 PROMPTS["entity_extraction_query"] = """You are a helpful assistant that helps a human analyst identify all the named entities present in the input query, as well as general concepts that may be important for answering the query.
 Each element you extract will be used to search a knowledge base to gather relevant information to answer the query.
 
-# DOMAIN
-{domain}
-
 # GOAL
-Given the input query and the given domain, identify all named entities and concepts present in the query.
+Given the input query, extract all named entities present in the query.
 
-# EXAMPLE
-Domain: Magazines
-Query: Which magazine was started first: Arthur's Magazine or First for Women?
-Ouput: {{"entities": ["Magazine releases", "First for Women", "Arthur's Magazine"], "n": 3}}
+# EXAMPLE 1
+Query: Do the magazines Arthur's Magazine or First for Women have the same publisher?
+Ouput: {{"entities": ["First for Women", "Arthur's Magazine", "magazine publisher"], "n": 3}}
+
+# EXAMPLE 2
+Query: When did Luca's mother die?
+Ouput: {{"entities": ["Luca", "mother"], "n": 2}}
+
 
 # INPUT
-Domain: {domain}
 Query: {query}
 Output:
 """
@@ -183,16 +175,16 @@ Your goal is to provide a response to the user's query, summarizing the relevant
 If the answer cannot be inferred from the input data tables, just say no relevant information was found. Do not make anything up or add unrelevant information. Be concise.
 
 # INPUT DATA TABLES
-
 {context}
+
+# QUERY
+{query}
 
 # OUTPUT
 Follow this steps:
-1. Read the data tables provided and identify all relevant information that may help answer the user's query. Do not mention the words "input data tables" in your response, just answer the user's question.
-2. For each relationship's description in the input data table, determine it's contribution weight to the generated answer. Select only those relationship's that are important for answering the query. This is a value from 0.0 (not relevant at all) to (1.0 fundamental). Check all the given input relationships in order based on their id.
-
-User Query:
-{query}
+1. Read and understand the query and the information that would be relevant to answer it.
+2. Carefully analyze the data tables provided and identify all relevant information that may help answer the user's query.
+3. Generate a response to the user's query based on the information you have gathered.
 
 Answer:
 """
