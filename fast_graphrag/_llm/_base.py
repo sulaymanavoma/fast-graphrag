@@ -46,6 +46,7 @@ class BaseLLMService:
 
     model: Optional[str] = field(default=None)
     base_url: Optional[str] = field(default=None)
+    api_key: Optional[str] = field(default=None)
     llm_async_client: Any = field(init=False, default=None)
 
     async def send_message(
@@ -80,6 +81,7 @@ class BaseEmbeddingService:
     embedding_dim: int = field(default=1536)
     model: Optional[str] = field(default="text-embedding-3-small")
     base_url: Optional[str] = field(default=None)
+    api_key: Optional[str] = field(default=None)
 
     embedding_async_client: Any = field(init=False, default=None)
 
