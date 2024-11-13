@@ -84,7 +84,7 @@ EXAMPLE_QUERIES = [
     "Why does Dickens choose to divide the story into \"staves\" rather than chapters?"
 ]
 
-ENTITY_TYPES = ["Character", "Animal", "Place", "Object", "Activty", "Event"]
+ENTITY_TYPES = ["Character", "Animal", "Place", "Object", "Activity", "Event"]
 
 grag = GraphRAG(
     working_dir="./book_example",
