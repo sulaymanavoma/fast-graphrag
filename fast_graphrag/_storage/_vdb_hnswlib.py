@@ -61,9 +61,11 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         self._index.add_items(data=embeddings, ids=ids, num_threads=self.config.num_threads)
         self._current_elements = self._index.get_current_count()
 
-    async def get_knn(self, embeddings: Iterable[GTEmbedding], top_k: int) -> Tuple[List[GTId], npt.NDArray[TScore]]:
+    async def get_knn(
+        self, embeddings: Iterable[GTEmbedding], top_k: int
+    ) -> Tuple[Iterable[Iterable[GTId]], npt.NDArray[TScore]]:
         if self._current_elements == 0:
-            empty_list: List[GTId] = []
+            empty_list: List[List[GTId]] = []
             logger.info("Querying knns in empty index.")
             return empty_list, np.array([], dtype=TScore)
 
@@ -85,9 +87,7 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
             embeddings = np.array(list(embeddings), dtype=np.float32)
 
         if embeddings.size == 0 or self._current_elements == 0:
-            logger.warning(
-                f"No provided embeddings ({embeddings.size}) or empty index ({self._current_elements})."
-            )
+            logger.warning(f"No provided embeddings ({embeddings.size}) or empty index ({self._current_elements}).")
             return csr_matrix((0, self._current_elements))
 
         ids, distances = self._index.knn_query(data=embeddings, k=top_k, num_threads=self.config.num_threads)
