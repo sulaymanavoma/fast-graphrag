@@ -51,7 +51,7 @@ pip install fast-graphrag
 
 ```bash
 # clone this repo first
-cd fast-graphrag
+cd fast_graphrag
 poetry install
 ```
 
