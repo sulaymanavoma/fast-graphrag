@@ -45,14 +45,18 @@ class Workspace:
 
         if self.keep_n > 0:
             checkpoints = sorted((x.name for x in os.scandir(self.working_dir) if x.is_dir()), reverse=True)
-            for checkpoint in checkpoints[self.keep_n :]:
+            for checkpoint in checkpoints[self.keep_n + 1 :]:
                 shutil.rmtree(os.path.join(self.working_dir, str(checkpoint)))
 
     def make_for(self, namespace: str) -> "Namespace":
         return Namespace(self, namespace)
 
     def get_load_path(self) -> Optional[str]:
-        return self.get_path(self.working_dir, self.current_load_checkpoint)
+        load_path = self.get_path(self.working_dir, self.current_load_checkpoint)
+        if load_path == self.working_dir and len([x for x in os.scandir(load_path) if x.is_file()]) == 0:
+            return None
+        return load_path
+
 
     def get_save_path(self) -> str:
         if self.save_checkpoint is None:
