@@ -99,7 +99,7 @@ PROMPTS["entity_relationship_continue_extraction"] = "MANY entities were missed 
 
 PROMPTS["entity_relationship_gleaning_done_extraction"] = "Retrospectively check if all entities have been correctly identified: answer done if so, or continue if there are still entities that need to be added."
 
-PROMPTS["entity_extraction_query"] = """You are a helpful assistant that helps a human analyst identify all the named entities present in the input query, as well as general concepts that may be important for answering the query.
+PROMPTS["entity_extraction_query"] = """You are a helpful assistant that helps a human analyst identify all the named entities present in the input query that may be important for answering the query.
 Each element you extract will be used to search a knowledge base to gather relevant information to answer the query.
 
 # GOAL
@@ -107,11 +107,11 @@ Given the input query, extract all named entities present in the query.
 
 # EXAMPLE 1
 Query: Do the magazines Arthur's Magazine or First for Women have the same publisher?
-Ouput: {{"entities": ["First for Women", "Arthur's Magazine", "magazine publisher"], "n": 3}}
+Ouput: {{"entities": ["First for Women", "Arthur's Magazine"], "n": 2}}
 
 # EXAMPLE 2
 Query: When did Luca's mother die?
-Ouput: {{"entities": ["Luca", "mother"], "n": 2}}
+Ouput: {{"entities": ["Luca"], "n": 1}}
 
 
 # INPUT

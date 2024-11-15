@@ -1,10 +1,12 @@
 import asyncio
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import Any, Awaitable, Iterable, List, Optional, Tuple, Type, cast
+from typing import Any, Awaitable, Dict, Iterable, List, Optional, Tuple, Type, cast
 
 import numpy as np
+import numpy.typing as npt
 from scipy.sparse import csr_matrix
+from tqdm import tqdm
 
 from fast_graphrag._llm import BaseLLMService
 from fast_graphrag._storage._base import (
@@ -21,6 +23,7 @@ from fast_graphrag._types import (
     TEntity,
     THash,
     TId,
+    TIndex,
     TRelation,
     TScore,
 )
@@ -32,6 +35,7 @@ from ._base import BaseStateManagerService
 @dataclass
 class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THash, TChunk, TId, TEmbedding]):
     blob_storage_cls: Type[BaseBlobStorage[csr_matrix]] = field(default=PickleBlobStorage)
+    similarity_score_threshold: float = field(default=0.8)
 
     def __post_init__(self):
         assert self.workspace is not None, "Workspace must be provided."
@@ -64,10 +68,12 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         llm: BaseLLMService,
         subgraphs: List[asyncio.Future[Optional[BaseGraphStorage[TEntity, TRelation, TId]]]],
         documents: Iterable[Iterable[TChunk]],
+        show_progress: bool = True,
     ) -> None:
         nodes: Iterable[List[TEntity]]
         edges: Iterable[List[TRelation]]
 
+        # STEP: Extracting subgraphs
         async def _get_graphs(
             fgraph: asyncio.Future[Optional[BaseGraphStorage[TEntity, TRelation, TId]]],
         ) -> Optional[Tuple[List[TEntity], List[TRelation]]]:
@@ -80,37 +86,106 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
             return (nodes, edges)
 
-        graphs = await asyncio.gather(*[_get_graphs(fgraph) for fgraph in subgraphs])
-        graphs = [graph for graph in graphs if graph is not None]
+        progress_bar = tqdm(total=8, disable=not show_progress, desc="Extracting subgraphs")
+        graphs = [r for graph in tqdm(
+            asyncio.as_completed([_get_graphs(fgraph) for fgraph in subgraphs]),
+            total=len(subgraphs),
+            leave=False,
+            disable=not show_progress,
+        ) if (r := await graph) is not None]
         if len(graphs) == 0:
             return
+        progress_bar.update(1)
 
+        # STEP (2): Upserting nodes and edges
         nodes, edges = zip(*graphs)
+        progress_bar.set_description("Upserting nodes and edges")
 
         _, upserted_nodes = await self.node_upsert_policy(llm, self.graph_storage, chain(*nodes))
+        progress_bar.update(1)
         _, _ = await self.edge_upsert_policy(llm, self.graph_storage, chain(*edges))
+        progress_bar.update(1)
 
+        # STEP (2): Computing entity embeddings
+        progress_bar.set_description("Computing entity embeddings")
         # Insert entities in entity_storage
         embeddings = await self.embedding_service.get_embedding(texts=[d.to_str() for _, d in upserted_nodes])
+        progress_bar.update(1)
         await self.entity_storage.upsert(ids=(i for i, _ in upserted_nodes), embeddings=embeddings)
+        progress_bar.update(1)
 
+        # STEP: Entity deduplication
+        # Note that get_knn will very likely return the same entity as the most similar one, so we remove it
+        # when selecting the index order.
+        progress_bar.set_description("Entity deduplication")
+        upserted_indices = np.array([i for i, _ in upserted_nodes]).reshape(-1, 1)
+        similar_indices, scores = await self.entity_storage.get_knn(embeddings, top_k=5)
+        similar_indices = np.array(similar_indices)
+        scores = np.array(scores)
+
+        # Create matrix with the indices with a score higher than the threshold
+        # We use the fact that similarity scores are symmetric between entity pairs,
+        # so we only select half of that by index order
+        similar_indices[
+            (scores < self.similarity_score_threshold)
+            | (similar_indices <= upserted_indices)  # remove indices smaller or equal the entity
+        ] = 0  # 0 can be used here (not 100% sure, but 99% sure)
+        progress_bar.update(1)
+
+        # | entity_index  | similar_indices[] |
+        # |---------------|------------------------|
+        # | 1             | 0, 7, 12, 0, 9         |
+
+        # STEP: insert identity edges
+        progress_bar.set_description("Inserting identity edges")
+        async def _insert_identiy_edges(
+            source_index: TIndex, target_indices: npt.NDArray[np.int32]
+        ) -> Iterable[Tuple[TIndex, TIndex]]:
+            return [
+                (source_index, idx)
+                for idx in target_indices
+                if idx != 0 and not await self.graph_storage.are_neighbours(source_index, idx)
+            ]
+
+        new_edge_indices = list(
+            chain(
+                *await asyncio.gather(*[_insert_identiy_edges(i, indices) for i, indices in enumerate(similar_indices)])
+            )
+        )
+        new_edges_attrs: Dict[str, Any] = {
+            "description": ["is"] * len(new_edge_indices),
+            "chunks": [[]] * len(new_edge_indices),
+        }
+        await self.graph_storage.insert_edges(indices=new_edge_indices, attrs=new_edges_attrs)
+        progress_bar.update(1)
+
+        # STEP: Save chunks
         # Insert chunks in chunk_storage
+        progress_bar.set_description("Inserting chunks")
         flattened_chunks = [chunk for chunks in documents for chunk in chunks]
         await self.chunk_storage.upsert(keys=[chunk.id for chunk in flattened_chunks], values=flattened_chunks)
+        progress_bar.update(1)
 
     async def get_context(
         self, query: str, entities: Iterable[TEntity]
     ) -> Optional[TContext[TEntity, TRelation, THash, TChunk]]:
         try:
-            # entity_names = [entity.name for entity in entities]
-            # if len(entity_names) == 0:
-            #     return None
+            entity_names = [entity.name for entity in entities]
+            if len(entity_names) == 0:
+                return None
 
-            # query_embeddings = await self.embedding_service.get_embedding(entity_names)
-            query_embeddings = await self.embedding_service.get_embedding([query])
+            query_embeddings = await self.embedding_service.get_embedding(entity_names + [query])
+            # query_embeddings = await self.embedding_service.get_embedding([query])
 
             # Similarity-search over entities
-            vdb_entity_scores = await self._score_entities_by_vectordb(query_embeddings=query_embeddings, top_k=10)
+            vdb_entity_scores_by_name = await self._score_entities_by_vectordb(
+                query_embeddings=query_embeddings[:-1], top_k=1
+            )
+            vdb_entity_scores_by_query = await self._score_entities_by_vectordb(
+                query_embeddings=query_embeddings[-1:], top_k=16
+            )
+
+            vdb_entity_scores = vdb_entity_scores_by_name + vdb_entity_scores_by_query
 
             if vdb_entity_scores.nnz == 0:
                 return None
@@ -178,10 +253,12 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         )  # (#query_entities, #all_entities)
 
         # TODO: if top_k > 1, we need to aggregate the scores here
-        # At the moment, we just take the max and, since we normalise, the max value of a top_k=1 is always 1.0
         if all_entity_probs_by_query_entity.shape[1] == 0:
             return all_entity_probs_by_query_entity
         all_entity_weights: csr_matrix = all_entity_probs_by_query_entity.max(axis=0)  # (1, #all_entities)
+
+        # Normalize the scores
+        all_entity_weights /= all_entity_weights.sum()
 
         if self.node_specificity:
             all_entity_weights = all_entity_weights.multiply(1.0 / await self._get_entities_to_num_docs())
