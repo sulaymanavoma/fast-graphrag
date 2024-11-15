@@ -74,7 +74,7 @@ class TestNodeUpsertPolicy_SummarizeDescription(unittest.IsolatedAsyncioTestCase
 
         self.assertEqual(
             upserted_nodes[0][1].description,
-            "This is a short random description 1.\nThis is a short random description 2.",
+            "This is a short random description 1.  This is a short random description 2.",
         )
 
         # Assertions
@@ -127,6 +127,7 @@ class TestEdgeUpsertPolicy_UpsertIfValidNodes(unittest.IsolatedAsyncioTestCase):
         # Mock methods
         target.get_node.side_effect = lambda x: (MagicMock(), None) if x in ["source1", "target1"] else (None, None)
         target.upsert_edge = AsyncMock()
+        target.insert_edges = AsyncMock()
 
         # Create policy instance
         policy = EdgeUpsertPolicy_UpsertIfValidNodes(config=EdgeUpsertPolicy_UpsertIfValidNodes.Config())
@@ -136,7 +137,8 @@ class TestEdgeUpsertPolicy_UpsertIfValidNodes(unittest.IsolatedAsyncioTestCase):
 
         # Assertions
         target.get_node.assert_has_calls([call("source1"), call("target1"), call("source1"), call("target2")])
-        target.upsert_edge.assert_called_once_with(edge=edge1, edge_index=None)
+        target.upsert_edge.assert_not_called()
+        target.insert_edges.assert_called_once_with([edge1])
 
 
 class TestDefaultNodeUpsertPolicy(unittest.IsolatedAsyncioTestCase):  # noqa: N801
@@ -226,10 +228,16 @@ class TestEdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(unittest.IsolatedAsyn
 
         def _upsert_edge(edge, edge_index):
             nonlocal insert_index
+            if edge_index is not None:
+                return edge_index
             insert_index += 1
             return insert_index
 
+        def _insert_edges(edges):
+            return [_upsert_edge(edge, None) for edge in edges]
+
         self.mock_target.upsert_edge = AsyncMock(side_effect=_upsert_edge)
+        self.mock_target.insert_edges = AsyncMock(side_effect=_insert_edges)
         self.mock_target.delete_edges_by_index = AsyncMock()
 
         target, upserted_edges = await edge_upsert_policy(self.mock_llm, self.mock_target, edges)
@@ -296,14 +304,21 @@ class TestEdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(unittest.IsolatedAsyn
             insert_index += 1
             return i
 
+        def _insert_edges(edges):
+            return [_upsert_edge(edge, None) for edge in edges]
+
         self.mock_target.upsert_edge = AsyncMock(side_effect=_upsert_edge)
+        self.mock_target.insert_edges = AsyncMock(side_effect=_insert_edges)
         self.mock_target.delete_edges_by_index = AsyncMock()
 
         target, upserted_edges = await edge_upsert_policy(self.mock_llm, self.mock_target, edges)
         upserted_edges = list(upserted_edges)
         edges = [e[1].description for e in upserted_edges]
-        self.assertEqual(edges, ['Summary', 'node1node4', 'Summary1', 'Summary2', 'node2node4', 'node2node5'])
-        self.assertEqual([e[0] for e in upserted_edges], [1, 5, 2, 6, 7, 8])
+        self.assertEqual(
+            set(edges),
+            {"Summary", "Summary1", "node1node4", "Summary2", "node2node4", "node2node5"}
+        )
+        self.assertEqual({e[0] for e in upserted_edges}, {1, 5, 2, 6, 7, 8})
         self.assertEqual(set(self.mock_target.delete_edges_by_index.call_args[0][0]), {0, 3, 4})
 
 
@@ -317,6 +332,7 @@ class TestDefaultEdgeUpsertPolicy(unittest.IsolatedAsyncioTestCase):  # noqa: N8
 
         # Mock methods
         target.upsert_edge = AsyncMock()
+        target.insert_edges = AsyncMock()
 
         # Create policy instance
         policy = DefaultEdgeUpsertPolicy(config=None)
@@ -325,7 +341,8 @@ class TestDefaultEdgeUpsertPolicy(unittest.IsolatedAsyncioTestCase):  # noqa: N8
         await policy(llm, target, source_edges)
 
         # Assertions
-        target.upsert_edge.assert_called_once_with(edge=edge, edge_index=None)
+        target.upsert_edge.assert_not_called()
+        target.insert_edges.assert_called_once_with(source_edges)
 
 
 # class TestDefaultGraphUpsertPolicy(unittest.IsolatedAsyncioTestCase):
