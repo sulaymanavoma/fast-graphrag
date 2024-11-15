@@ -108,7 +108,7 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
     """Base class for Language Model implementations."""
 
     embedding_dim: int = field(default=1536)
-    max_request_tokens: int = 16000
+    max_request_tokens: int = 8000
     model: Optional[str] = field(default="text-embedding-3-small")
 
     def __post_init__(self):
