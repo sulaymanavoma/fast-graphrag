@@ -13,7 +13,7 @@ from fast_graphrag._policies._graph_upsert import (
     EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM,
     NodeUpsertPolicy_SummarizeDescription,
 )
-from fast_graphrag._policies._ranking import RankingPolicy_TopK
+from fast_graphrag._policies._ranking import RankingPolicy_TopK, RankingPolicy_WithThreshold
 from fast_graphrag._services import (
     BaseChunkingService,
     BaseInformationExtractionService,
@@ -73,11 +73,11 @@ class GraphRAG(BaseGraphRAG[TEmbedding, THash, TChunk, TEntity, TRelation, TId])
             default_factory=lambda: DefaultIndexedKeyValueStorage(None)
         )
 
-        entity_ranking_policy: RankingPolicy_TopK = field(
-            default_factory=lambda: RankingPolicy_TopK(RankingPolicy_TopK.Config(top_k=8))
+        entity_ranking_policy: RankingPolicy_WithThreshold = field(
+            default_factory=lambda: RankingPolicy_WithThreshold(RankingPolicy_WithThreshold.Config(threshold=0.005))
         )
         relation_ranking_policy: RankingPolicy_TopK = field(
-            default_factory=lambda: RankingPolicy_TopK(RankingPolicy_TopK.Config(top_k=24))
+            default_factory=lambda: RankingPolicy_TopK(RankingPolicy_TopK.Config(top_k=32))
         )
         chunk_ranking_policy: RankingPolicy_TopK = field(
             default_factory=lambda: RankingPolicy_TopK(RankingPolicy_TopK.Config(top_k=8))
