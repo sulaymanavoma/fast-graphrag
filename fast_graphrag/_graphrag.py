@@ -16,6 +16,16 @@ from fast_graphrag._utils import TOKEN_TO_CHAR_RATIO, get_event_loop, logger
 
 
 @dataclass
+class InsertParam:
+    pass
+
+
+@dataclass
+class QueryParam:
+    with_references: bool = False
+
+
+@dataclass
 class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
     """A class representing a Graph-based Retrieval-Augmented Generation system."""
 
@@ -57,28 +67,38 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
             raise ValueError("Embedding dimension mismatch between the embedding service and the entity storage.")
 
     def insert(
-        self, content: Union[str, List[str]], metadata: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
+        self,
+        content: Union[str, List[str]],
+        metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
+        params: Optional[InsertParam] = None,
     ) -> None:
-        return get_event_loop().run_until_complete(self.async_insert(content, metadata))
+        return get_event_loop().run_until_complete(self.async_insert(content, metadata, params))
 
     async def async_insert(
-        self, content: Union[str, List[str]], metadata: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
+        self,
+        content: Union[str, List[str]],
+        metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
+        params: Optional[InsertParam] = None,
     ) -> None:
         """Insert a new memory or memories into the graph.
 
         Args:
             content (str | list[str]): The data to be inserted. Can be a single string or a list of strings.
             metadata (dict, optional): Additional metadata associated with the data. Defaults to None.
+            params (InsertParam, optional): Additional parameters for the insertion. Defaults to None.
         """
+        if params is None:
+            params = InsertParam()
+
         if isinstance(content, str):
             content = [content]
         if isinstance(metadata, dict):
             metadata = [metadata]
 
-        if metadata is None:
-            data = (TDocument(data=c) for c in content)
+        if metadata is None or isinstance(metadata, dict):
+            data = (TDocument(data=c, metadata=metadata or {}) for c in content)
         else:
-            data = (TDocument(data=c, metadata=m) for c, m in zip(content, metadata))
+            data = (TDocument(data=c, metadata=m or {}) for c, m in zip(content, metadata))
 
         await self.state_manager.insert_start()
         try:
@@ -109,52 +129,62 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         finally:
             await self.state_manager.insert_done()
 
-    def query(self, query: str) -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
-        return get_event_loop().run_until_complete(self.async_query(query))
+    def query(self, query: str, params: Optional[QueryParam] = None) -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
+        async def _query() -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
+            try:
+                await self.state_manager.query_start()
+                answer = await self.async_query(query, params)
+                return answer
+            except Exception as e:
+                logger.error(f"Error during query: {e}")
+                raise e
+            finally:
+                await self.state_manager.query_done()
 
-    async def async_query(self, query: str) -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
+        return get_event_loop().run_until_complete(_query())
+
+    async def async_query(
+        self, query: str, params: Optional[QueryParam] = None
+    ) -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
         """Query the graph with a given input.
 
         Args:
             query (str): The query string to search for in the graph.
+            params (QueryParam, optional): Additional parameters for the query. Defaults to None.
 
         Returns:
             TQueryResponse: The result of the query (response + context).
         """
-        await self.state_manager.query_start()
-        try:
-            # Extract entities from query
-            extracted_entities = await self.information_extraction_service.extract_entities_from_query(
-                llm=self.llm_service, query=query, prompt_kwargs={}
+        if params is None:
+            params = QueryParam()
+
+        # Extract entities from query
+        extracted_entities = await self.information_extraction_service.extract_entities_from_query(
+            llm=self.llm_service, query=query, prompt_kwargs={}
+        )
+
+        # Retrieve relevant state
+        relevant_state = await self.state_manager.get_context(query=query, entities=extracted_entities)
+        if relevant_state is None:
+            return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](
+                response=PROMPTS["fail_response"], context=TContext([], [], [])
             )
 
-            # Retrieve relevant state
-            relevant_state = await self.state_manager.get_context(query=query, entities=extracted_entities)
-            if relevant_state is None:
-                return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](
-                    response=PROMPTS["fail_response"], context=TContext([], [], [])
-                )
+        # Ask LLM
+        llm_response, _ = await format_and_send_prompt(
+            prompt_key="generate_response_query",
+            llm=self.llm_service,
+            format_kwargs={
+                "query": query,
+                "context": relevant_state.to_str(
+                    {
+                        "entities": 4000 * TOKEN_TO_CHAR_RATIO,
+                        "relationships": 3000 * TOKEN_TO_CHAR_RATIO,
+                        "chunks": 9000 * TOKEN_TO_CHAR_RATIO,
+                    }
+                ),
+            },
+            response_model=str,
+        )
 
-            # Ask LLM
-            llm_response, _ = await format_and_send_prompt(
-                prompt_key="generate_response_query",
-                llm=self.llm_service,
-                format_kwargs={
-                    "query": query,
-                    "context": relevant_state.to_str(
-                        {
-                            "entities": 4000 * TOKEN_TO_CHAR_RATIO,
-                            "relationships": 3000 * TOKEN_TO_CHAR_RATIO,
-                            "chunks": 9000 * TOKEN_TO_CHAR_RATIO,
-                        }
-                    ),
-                },
-                response_model=str,
-            )
-
-            return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](response=llm_response, context=relevant_state)
-        except Exception as e:
-            logger.error(f"Error during query: {e}")
-            raise e
-        finally:
-            await self.state_manager.query_done()
+        return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](response=llm_response, context=relevant_state)
