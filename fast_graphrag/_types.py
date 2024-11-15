@@ -40,6 +40,12 @@ class BTEdge:
     source: Any
     target: Any
 
+    @staticmethod
+    def to_attrs(
+        edge: Optional[Any] = None, edges: Optional[Iterable[Any]] = None, **kwargs: Any
+    ) -> Dict[str, Any]:
+        raise NotImplementedError
+
 
 GTEdge = TypeVar("GTEdge", bound=BTEdge)
 GTChunk = TypeVar("GTChunk")
@@ -181,7 +187,36 @@ class TRelation(BTResponseModel, BTEdge):
     source: str = field()
     target: str = field()
     description: str = field()
-    chunks: Iterable[THash] | None = field(default=None)
+    chunks: List[THash] | None = field(default=None)
+
+    @staticmethod
+    def to_attrs(
+        edge: Optional["TRelation"] = None,
+        edges: Optional[Iterable["TRelation"]] = None,
+        include_source_target: bool = False,
+        **_,
+    ) -> Dict[str, Any]:
+        if edge is not None:
+            assert edges is None, "Either edge or edges should be provided, not both."
+            return {
+                "description": edge.description,
+                "chunks": edge.chunks,
+                **({
+                    "source": edge.source,
+                    "target": edge.target,
+                } if include_source_target else {}),
+            }
+        elif edges is not None:
+            return {
+                "description": [e.description for e in edges],
+                "chunks": [e.chunks for e in edges],
+                **({
+                    "source": [e.source for e in edges],
+                    "target": [e.target for e in edges],
+                } if include_source_target else {}),
+            }
+        else:
+            return {}
 
     class Model(BTResponseModel.Model, metaclass=MetaModel, alias="Relation"):
         source: str = Field(..., description="The name of the source entity.", alias="source_entity")
@@ -250,8 +285,8 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
         csv_tables: Dict[str, List[str]] = {
             "entities": dump_to_csv([e for e, _ in self.entities], ["name", "description"], with_header=True),
             "relationships": dump_to_csv(
-            [r for r, _ in self.relationships], ["source", "target", "description"], with_header=True
-        ),
+                [r for r, _ in self.relationships], ["source", "target", "description"], with_header=True
+            ),
             "chunks": dump_to_csv([c for c, _ in self.chunks], ["content"], with_header=True),
         }
         csv_tables_row_length = {k: [len(row) for row in table] for k, table in csv_tables.items()}

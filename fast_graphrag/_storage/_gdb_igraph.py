@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass, field
-from typing import Any, Generic, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Generic, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import igraph as ig  # type: ignore
 import numpy as np
@@ -104,16 +104,49 @@ class IGraphStorage(BaseGraphStorage[GTNode, GTEdge, GTId]):
                 )
                 raise ValueError(f"Index {edge_index} is out of bounds")
             already_edge = self._graph.es[edge_index]  # type: ignore
-            new_attributes = asdict(edge)
-            new_attributes.pop("source")
-            new_attributes.pop("target")
-            already_edge.update_attributes(**new_attributes)  # type: ignore
+            already_edge.update_attributes(**edge.to_attrs(edge=edge))  # type: ignore
 
             return already_edge.index  # type: ignore
         else:
             return self._graph.add_edge(  # type: ignore
                 **asdict(edge)
             ).index  # type: ignore
+
+    async def insert_edges(
+        self,
+        edges: Optional[Iterable[GTEdge]] = None,
+        indices: Optional[Iterable[Tuple[TIndex, TIndex]]] = None,
+        attrs: Optional[Mapping[str, Iterable[Any]]] = None,
+    ) -> List[TIndex]:
+        if indices is not None:
+            assert edges is None, "Cannot provide both indices and edges."
+
+            indices = list(indices)
+            if len(indices) == 0:
+                return []
+            self._graph.add_edges(  # type: ignore
+                indices,
+                attributes=attrs,
+            )
+            # TODO: not sure if this is the best way to get the indices of the new edges
+            return list(range(self._graph.ecount() - len(indices), self._graph.ecount()))  # type: ignore
+        elif edges is not None:
+            assert indices is None and attrs is None, "Cannot provide both indices and edges."
+            edges = list(edges)
+            if len(edges) == 0:
+                return []
+            self._graph.add_edges(  # type: ignore
+                ((edge.source, edge.target) for edge in edges),
+                attributes=type(edges[0]).to_attrs(edges=edges),
+            )
+
+            # TODO: not sure if this is the best way to get the indices of the new edges
+            return list(range(self._graph.ecount() - len(edges), self._graph.ecount()))  # type: ignore
+        else:
+            return []
+
+    async def are_neighbours(self, source_node: Union[GTId, TIndex], target_node: Union[GTId, TIndex]) -> bool:
+        return self._graph.get_eid(source_node, target_node, directed=False, error=False) != -1  # type: ignore
 
     async def delete_edges_by_index(self, indices: Iterable[TIndex]) -> None:
         self._graph.delete_edges(indices)  # type: ignore

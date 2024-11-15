@@ -61,11 +61,14 @@ class DefaultEdgeUpsertPolicy(BaseEdgeUpsertPolicy[GTEdge, GTId]):
     async def __call__(
         self, llm: BaseLLMService, target: BaseGraphStorage[GTNode, GTEdge, GTId], source_edges: Iterable[GTEdge]
     ) -> Tuple[BaseGraphStorage[GTNode, GTEdge, GTId], Iterable[Tuple[TIndex, GTEdge]]]:
-        upserted: List[Tuple[TIndex, GTEdge]] = []
-        for edge in source_edges:
-            index = await target.upsert_edge(edge=edge, edge_index=None)
-            upserted.append((index, edge))
-        return target, upserted
+        indices = await target.insert_edges(source_edges)
+
+        r: Iterable[Tuple[TIndex, GTEdge]]
+        if len(indices):
+            r = zip(indices, source_edges)
+        else:
+            r = []
+        return target, r
 
 
 @dataclass
@@ -114,7 +117,7 @@ class NodeUpsertPolicy_SummarizeDescription(BaseNodeUpsertPolicy[TEntity, TId]):
                 nodes.append(existing_node)
 
             # Resolve descriptions
-            node_description = "\n".join((node.description for node in nodes))
+            node_description = "  ".join((node.description for node in nodes))
 
             if len(node_description) > self.config.max_node_description_size:
                 node_description = await summarize_entity_description(
@@ -127,6 +130,7 @@ class NodeUpsertPolicy_SummarizeDescription(BaseNodeUpsertPolicy[TEntity, TId]):
                     #     / TOKEN_TO_CHAR_RATIO
                     # ),
                 )
+                node_description = node_description.replace("\n", "  ")
 
             # Resolve types (pick most frequent)
             node_type = Counter((node.type for node in nodes)).most_common(1)[0][0]
@@ -167,15 +171,14 @@ class EdgeUpsertPolicy_UpsertIfValidNodes(BaseEdgeUpsertPolicy[TRelation, TId]):
     async def __call__(
         self, llm: BaseLLMService, target: BaseGraphStorage[GTNode, TRelation, TId], source_edges: Iterable[TRelation]
     ) -> Tuple[BaseGraphStorage[GTNode, TRelation, TId], Iterable[Tuple[TIndex, TRelation]]]:
-        upserted_edges: Dict[TIndex, TRelation] = {}
+        new_edges: List[TRelation] = []
 
         async def _upsert_edge(edge: TRelation) -> Optional[Tuple[TIndex, TRelation]]:
             source_node, _ = await target.get_node(edge.source)
             target_node, _ = await target.get_node(edge.target)
 
             if source_node and target_node:
-                index = await target.upsert_edge(edge=edge, edge_index=None)
-                upserted_edges[index] = edge
+                new_edges.append(edge)
 
         if self.config.is_async:
             edge_upsert_tasks = (_upsert_edge(edge) for edge in source_edges)
@@ -183,8 +186,15 @@ class EdgeUpsertPolicy_UpsertIfValidNodes(BaseEdgeUpsertPolicy[TRelation, TId]):
         else:
             for edge in source_edges:
                 await _upsert_edge(edge)
+        indices = await target.insert_edges(new_edges)
 
-        return target, upserted_edges.items()
+        r: Iterable[Tuple[TIndex, TRelation]]
+        if len(indices):
+            r = zip(indices, new_edges)
+        else:
+            r = []
+
+        return target, r
 
 
 @dataclass
@@ -203,19 +213,20 @@ class EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(BaseEdgeUpsertPolicy[TRel
         edges: List[TRelation],
         source_entity: TId,
         target_entity: TId,
-    ) -> Tuple[List[Tuple[TIndex, TRelation]], List[TIndex]]:
+    ) -> Tuple[List[Tuple[TIndex, TRelation]], List[TRelation], List[TIndex]]:
         existing_edges = list(await target.get_edges(source_entity, target_entity))
 
         # Check if we need to run edges maintenance
         if (len(existing_edges) + len(edges)) > self.config.edge_merge_threshold:
-            upserted_eges, to_delete_edges = await self._merge_similar_edges(llm, target, existing_edges, edges)
+            upserted_eges, new_edges, to_delete_edges = await self._merge_similar_edges(
+                llm, target, existing_edges, edges
+            )
         else:
-            upserted_eges: List[Tuple[TIndex, TRelation]] = []
+            upserted_eges = []
+            new_edges = edges
             to_delete_edges = []
-            for edge in edges:
-                upserted_eges.append((await target.upsert_edge(edge, None), edge))
 
-        return upserted_eges, to_delete_edges
+        return upserted_eges, new_edges, to_delete_edges
 
     async def _merge_similar_edges(
         self,
@@ -223,7 +234,7 @@ class EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(BaseEdgeUpsertPolicy[TRel
         target: BaseGraphStorage[GTNode, TRelation, TId],
         existing_edges: List[Tuple[TRelation, TIndex]],
         edges: List[TRelation],
-    ) -> Tuple[List[Tuple[TIndex, TRelation]], List[TIndex]]:
+    ) -> Tuple[List[Tuple[TIndex, TRelation]], List[TRelation], List[TIndex]]:
         """Merge similar edges between the same pair of nodes.
 
         Args:
@@ -233,10 +244,11 @@ class EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(BaseEdgeUpsertPolicy[TRel
             edges (List[TRelation]): list of new edges to be upserted.
 
         Returns:
-            Tuple[List[Tuple[TIndex, TRelation]], List[TIndex]]: return the pairs of inserted (index, edge)
-                and the indices of the edges that are to be deleted.
+            Tuple[List[Tuple[TIndex, TRelation]], List[TIndex]]: return the pairs of inserted (index, edge),
+            the new edges that were not merged, and the indices of the edges that are to be deleted.
         """
-        upserted_eges: List[Tuple[TIndex, TRelation]] = []
+        updated_edges: List[Tuple[TIndex, TRelation]] = []
+        new_edges: List[TRelation] = []
         map_incremental_to_edge: Dict[int, Tuple[TRelation, Union[TIndex, None]]] = {
             **dict(enumerate(existing_edges)),
             **{idx + len(existing_edges): (edge, None) for idx, edge in enumerate(edges)},
@@ -279,26 +291,31 @@ class EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(BaseEdgeUpsertPolicy[TRel
 
             first_index = relation_indices[0]
             edge, index = map_incremental_to_edge[first_index]
-            edge.description = edges_group.description
+            edge.description = edges_group.description.replace("\n", "  ")
             visited_edges[first_index] = None  # None means it was visited but not marked for deletion.
             if edge.chunks:
                 chunks.update(edge.chunks)
-            edge.chunks = chunks
-            upserted_eges.append((await target.upsert_edge(edge, index), edge))
+            edge.chunks = list(chunks)
+            if index is not None:
+                updated_edges.append((await target.upsert_edge(edge, index), edge))
+            else:
+                new_edges.append(edge)
 
         for idx, edge in enumerate(edges):
             # If the edge was not visited, it means it was not grouped and must be inserted as new.
             if idx + len(existing_edges) not in visited_edges:
-                upserted_eges.append((await target.upsert_edge(edge, None), edge))
+                new_edges.append(edge)
+                # upserted_eges.append((await target.upsert_edge(edge, None), edge))
 
         # Only existing edges that were marked for deletion have non-None value which corresponds to their real index.
-        return upserted_eges, [v for v in visited_edges.values() if v is not None]
+        return updated_edges, new_edges, [v for v in visited_edges.values() if v is not None]
 
     async def __call__(
         self, llm: BaseLLMService, target: BaseGraphStorage[GTNode, TRelation, TId], source_edges: Iterable[TRelation]
     ) -> Tuple[BaseGraphStorage[GTNode, TRelation, TId], Iterable[Tuple[TIndex, TRelation]]]:
         grouped_edges: Dict[Tuple[TId, TId], List[TRelation]] = defaultdict(lambda: [])
         upserted_edges: List[List[Tuple[TIndex, TRelation]]] = []
+        new_edges: List[List[TRelation]] = []
         to_delete_edges: List[List[TIndex]] = []
         for edge in source_edges:
             grouped_edges[(edge.source, edge.target)].append(edge)
@@ -310,13 +327,14 @@ class EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM(BaseEdgeUpsertPolicy[TRel
             )
             tasks = await asyncio.gather(*edge_upsert_tasks)
             if len(tasks):
-                upserted_edges, to_delete_edges = zip(*tasks)
+                upserted_edges, new_edges, to_delete_edges = zip(*tasks)
         else:
             tasks = [
                 await self._upsert_edge(llm, target, edges, source_entity, target_entity)
                 for (source_entity, target_entity), edges in grouped_edges.items()
             ]
             if len(tasks):
-                upserted_edges, to_delete_edges = zip(*tasks)
+                upserted_edges, new_edges, to_delete_edges = zip(*tasks)
         await target.delete_edges_by_index(chain(*to_delete_edges))
-        return target, chain(*upserted_edges)
+        new_indices = await target.insert_edges(chain(*new_edges))
+        return target, chain(*upserted_edges, zip(new_indices, chain(*new_edges)))

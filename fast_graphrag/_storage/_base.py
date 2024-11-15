@@ -1,5 +1,19 @@
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Dict, Generic, Iterable, List, Literal, Optional, Tuple, Union, final
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+    final,
+)
 
 from scipy.sparse import csr_matrix  # type: ignore
 
@@ -24,8 +38,9 @@ class BaseStorage:
         if self._mode == "query":
             logger.info("Switching from query to insert mode.")
             if self._in_progress is not False:
-                t = (f"[{self.__class__.__name__}] Cannot being insert before committing query operations."
-                     "Committing query operations now."
+                t = (
+                    f"[{self.__class__.__name__}] Cannot being insert before committing query operations."
+                    "Committing query operations now."
                 )
                 logger.error(t)
                 await self._query_done()
@@ -40,8 +55,9 @@ class BaseStorage:
         if self._mode == "insert":
             logger.info("Switching from insert to query mode.")
             if self._in_progress is not False:
-                t = (f"[{self.__class__.__name__}] Cannot being query before commiting insert operations."
-                     "Committing insert operations now."
+                t = (
+                    f"[{self.__class__.__name__}] Cannot being query before commiting insert operations."
+                    "Committing insert operations now."
                 )
                 logger.error(t)
                 await self._insert_done()
@@ -152,7 +168,9 @@ class BaseVectorStorage(BaseStorage, Generic[GTId, GTEmbedding]):
     def embedding_dim(self) -> int:
         raise NotImplementedError
 
-    async def get_knn(self, embeddings: Iterable[GTEmbedding], top_k: int) -> Tuple[Iterable[GTId], Iterable[TScore]]:
+    async def get_knn(
+        self, embeddings: Iterable[GTEmbedding], top_k: int
+    ) -> Tuple[Iterable[Iterable[GTId]], Iterable[Iterable[TScore]]]:
         raise NotImplementedError
 
     async def upsert(
@@ -219,6 +237,17 @@ class BaseGraphStorage(BaseStorage, Generic[GTNode, GTEdge, GTId]):
         raise NotImplementedError
 
     async def upsert_edge(self, edge: GTEdge, edge_index: Union[TIndex, None]) -> TIndex:
+        raise NotImplementedError
+
+    async def insert_edges(
+        self,
+        edges: Optional[Iterable[GTEdge]] = None,
+        indices: Optional[Iterable[Tuple[TIndex, TIndex]]] = None,
+        attrs: Optional[Mapping[str, Iterable[Any]]] = None,
+    ) -> List[TIndex]:
+        raise NotImplementedError
+
+    async def are_neighbours(self, source_node: Union[GTId, TIndex], target_node: Union[GTId, TIndex]) -> bool:
         raise NotImplementedError
 
     async def delete_edges_by_index(self, indices: Iterable[TIndex]) -> None:
