@@ -165,6 +165,3 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
         logger.debug(f"Received embedding response: {len(embeddings)} embeddings")
 
         return embeddings
-
-    def validate_embedding_dim(self, embedding_dim: int) -> bool:
-        return embedding_dim == self.embedding_dim

@@ -16,11 +16,10 @@ from ._base import BaseVectorStorage
 
 @dataclass
 class HNSWVectorStorageConfig:
-    embedding_dim: int = field()
-    ef_construction: int = field(default=100)
-    M: int = field(default=16)
+    ef_construction: int = field(default=48)
+    M: int = field(default=48)
     max_elements: int = field(default=1000000)
-    ef_search: int = field(default=50)
+    ef_search: int = field(default=32)
     num_threads: int = field(default=-1)
 
 
@@ -32,10 +31,6 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
     _index: Any = field(init=False, default=None)  # type: ignore
     _metadata: Dict[GTId, Dict[str, Any]] = field(default_factory=dict)
     _current_elements: int = field(init=False, default=0)
-
-    @property
-    def embedding_dim(self) -> int:
-        return self.config.embedding_dim
 
     async def upsert(
         self,
@@ -109,10 +104,10 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         return scores
 
     async def _insert_start(self):
-        self._index = hnswlib.Index(space="cosine", dim=self.config.embedding_dim)  # type: ignore
+        self._index = hnswlib.Index(space="cosine", dim=self.embedding_dim)  # type: ignore
 
         if self.namespace:
-            index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
+            index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.embedding_dim))
             metadata_file_name = self.namespace.get_load_path(self.RESOURCE_METADATA_NAME)
 
             if index_file_name and metadata_file_name:
@@ -150,7 +145,7 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
     async def _insert_done(self):
         if self.namespace:
-            index_file_name = self.namespace.get_save_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
+            index_file_name = self.namespace.get_save_path(self.RESOURCE_NAME.format(self.embedding_dim))
             metadata_file_name = self.namespace.get_save_path(self.RESOURCE_METADATA_NAME)
 
             try:
@@ -165,9 +160,9 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
     async def _query_start(self):
         assert self.namespace, "Loading a vectordb requires a namespace."
-        self._index = hnswlib.Index(space="cosine", dim=self.config.embedding_dim)  # type: ignore
+        self._index = hnswlib.Index(space="cosine", dim=self.embedding_dim)  # type: ignore
 
-        index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
+        index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.embedding_dim))
         metadata_file_name = self.namespace.get_load_path(self.RESOURCE_METADATA_NAME)
         if index_file_name and metadata_file_name:
             try:
