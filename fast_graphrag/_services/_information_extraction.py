@@ -1,6 +1,7 @@
 """Entity-Relationship extraction module."""
 
 import asyncio
+import re
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Literal, Optional
 
@@ -26,10 +27,16 @@ class DefaultInformationExtractionService(BaseInformationExtractionService[TChun
     """Default entity and relationship extractor."""
 
     def extract(
-        self, llm: BaseLLMService, documents: Iterable[Iterable[TChunk]], prompt_kwargs: Dict[str, str]
+        self,
+        llm: BaseLLMService,
+        documents: Iterable[Iterable[TChunk]],
+        prompt_kwargs: Dict[str, str],
+        entity_types: List[str],
     ) -> List[asyncio.Future[Optional[BaseGraphStorage[TEntity, TRelation, GTId]]]]:
         """Extract both entities and relationships from the given data."""
-        return [asyncio.create_task(self._extract(llm, document, prompt_kwargs)) for document in documents]
+        return [
+            asyncio.create_task(self._extract(llm, document, prompt_kwargs, entity_types)) for document in documents
+        ]
 
     async def extract_entities_from_query(
         self, llm: BaseLLMService, query: str, prompt_kwargs: Dict[str, str]
@@ -46,13 +53,13 @@ class DefaultInformationExtractionService(BaseInformationExtractionService[TChun
         return [TEntity(name=name, type="", description="") for name in entities.entities]
 
     async def _extract(
-        self, llm: BaseLLMService, chunks: Iterable[TChunk], prompt_kwargs: Dict[str, str]
+        self, llm: BaseLLMService, chunks: Iterable[TChunk], prompt_kwargs: Dict[str, str], entity_types: List[str]
     ) -> Optional[BaseGraphStorage[TEntity, TRelation, GTId]]:
         """Extract both entities and relationships from the given chunks."""
         # Extract entities and relatioships from each chunk
         try:
             chunk_graphs = await asyncio.gather(
-                *[self._extract_from_chunk(llm, chunk, prompt_kwargs) for chunk in chunks]
+                *[self._extract_from_chunk(llm, chunk, prompt_kwargs, entity_types) for chunk in chunks]
             )
             if len(chunk_graphs) == 0:
                 return None
@@ -108,7 +115,9 @@ class DefaultInformationExtractionService(BaseInformationExtractionService[TChun
 
         return current_graph
 
-    async def _extract_from_chunk(self, llm: BaseLLMService, chunk: TChunk, prompt_kwargs: Dict[str, str]) -> TGraph:
+    async def _extract_from_chunk(
+        self, llm: BaseLLMService, chunk: TChunk, prompt_kwargs: Dict[str, str], entity_types: List[str]
+    ) -> TGraph:
         """Extract entities and relationships from the given chunk."""
         prompt_kwargs["input_text"] = chunk.content
 
@@ -123,6 +132,11 @@ class DefaultInformationExtractionService(BaseInformationExtractionService[TChun
         chunk_graph_with_gleaning = await self._gleaning(llm, chunk_graph, history)
         if chunk_graph_with_gleaning:
             chunk_graph = chunk_graph_with_gleaning
+
+        _clean_entity_types = [re.sub("[ _]", "", entity_type).upper() for entity_type in entity_types]
+        for entity in chunk_graph.entities:
+            if re.sub("[ _]", "", entity.type).upper() not in _clean_entity_types:
+                entity.type = "UNKNOWN"
 
         # Assign chunk ids to relationships
         for relationship in chunk_graph.relationships:

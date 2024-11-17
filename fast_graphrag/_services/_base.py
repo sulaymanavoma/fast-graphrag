@@ -47,7 +47,11 @@ class BaseInformationExtractionService(Generic[GTChunk, GTNode, GTEdge, GTId]):
     max_gleaning_steps: int = 0
 
     def extract(
-        self, llm: BaseLLMService, documents: Iterable[Iterable[GTChunk]], prompt_kwargs: Dict[str, str]
+        self,
+        llm: BaseLLMService,
+        documents: Iterable[Iterable[GTChunk]],
+        prompt_kwargs: Dict[str, str],
+        entity_types: List[str],
     ) -> List[asyncio.Future[Optional[BaseGraphStorage[GTNode, GTEdge, GTId]]]]:
         """Extract both entities and relationships from the given data."""
         raise NotImplementedError
