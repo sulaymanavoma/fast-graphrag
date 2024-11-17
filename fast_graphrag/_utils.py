@@ -1,6 +1,8 @@
 import asyncio
 import logging
-from typing import List, Tuple, Union
+import time
+from functools import wraps
+from typing import Any, Callable, List, Tuple, TypeVar, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -11,6 +13,42 @@ from fast_graphrag._types import TIndex
 logger = logging.getLogger("graphrag")
 TOKEN_TO_CHAR_RATIO = 4
 
+def timeit(func: Callable[..., Any]):
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        start = time.time()
+        result = await func(*args, **kwargs)
+        duration = time.time() - start
+        wrapper.execution_times.append(duration)  # type: ignore
+        return result
+
+    wrapper.execution_times = []  # type: ignore
+    return wrapper
+
+
+def throttle_async_func_call(max_concurrent: int = 512, stagger_time: float = 0.002, waitting_time: float = 0.001):
+    _wrappedFn = TypeVar("_wrappedFn", bound=Callable[..., Any])
+    def decorator(func: _wrappedFn) -> _wrappedFn:
+        __current_exes = 0
+        __current_queued = 0
+
+        @wraps(func)
+        async def wait_func(*args: Any, **kwargs: Any) -> Any:
+            nonlocal __current_exes, __current_queued
+            while __current_exes >= max_concurrent:
+                await asyncio.sleep(waitting_time)
+            __current_queued += 1
+            await asyncio.sleep(stagger_time * (__current_queued - 1))
+            __current_queued -= 1
+
+            __current_exes += 1
+            result = await func(*args, **kwargs)
+            __current_exes -= 1
+            return result
+
+        return wait_func  # type: ignore
+
+    return decorator
 
 def get_event_loop() -> asyncio.AbstractEventLoop:
     try:

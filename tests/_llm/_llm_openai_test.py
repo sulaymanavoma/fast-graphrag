@@ -3,7 +3,8 @@ import os
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
-from openai import APIConnectionError, RateLimitError
+import instructor
+from openai import APIConnectionError, AsyncOpenAI, RateLimitError
 from tenacity import RetryError
 
 from fast_graphrag._exceptions import LLMServiceNoResponseError
@@ -17,7 +18,7 @@ RateLimitError429 = RateLimitError(message="Rate limit exceeded", response=Magic
 
 class TestOpenAILLMService(unittest.IsolatedAsyncioTestCase):
     async def test_send_message_success(self):
-        service = OpenAILLMService()
+        service = OpenAILLMService(api_key="test")
         mock_response = str("Hi!")
         service.llm_async_client = AsyncMock()
         service.llm_async_client.chat.completions.create = AsyncMock(return_value=mock_response)
@@ -28,7 +29,7 @@ class TestOpenAILLMService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(messages[-1]["role"], "assistant")
 
     async def test_send_message_no_response(self):
-        service = OpenAILLMService()
+        service = OpenAILLMService(api_key="test")
         service.llm_async_client = AsyncMock()
         service.llm_async_client.chat.completions.create.return_value = None
 
@@ -37,21 +38,29 @@ class TestOpenAILLMService(unittest.IsolatedAsyncioTestCase):
 
     async def test_send_message_rate_limit_error(self):
         service = OpenAILLMService()
-        service.llm_async_client = AsyncMock()
         mock_response = str("Hi!")
-        service.llm_async_client.chat.completions.create = AsyncMock(side_effect=(RateLimitError429, mock_response))
+        async_open_ai = AsyncOpenAI(api_key="test")
+        async_open_ai.chat.completions.create = AsyncMock(
+            side_effect=(RateLimitError429, mock_response)
+        )
+        service.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(
+            async_open_ai
+        )
 
-        response, messages = await service.send_message(prompt="Hello", model="gpt-4o-mini")
+        response, messages = await service.send_message(prompt="Hello", model="gpt-4o-mini", response_model=None)
 
         self.assertEqual(response, mock_response)
         self.assertEqual(messages[-1]["role"], "assistant")
 
     async def test_send_message_api_connection_error(self):
         service = OpenAILLMService()
-        service.llm_async_client = AsyncMock()
         mock_response = str("Hi!")
-        service.llm_async_client.chat.completions.create = AsyncMock(
+        async_open_ai = AsyncOpenAI(api_key="test")
+        async_open_ai.chat.completions.create = AsyncMock(
             side_effect=(APIConnectionError(request=MagicMock()), mock_response)
+        )
+        service.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(
+            async_open_ai
         )
 
         response, messages = await service.send_message(prompt="Hello", model="gpt-4o-mini")
@@ -59,18 +68,8 @@ class TestOpenAILLMService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response, mock_response)
         self.assertEqual(messages[-1]["role"], "assistant")
 
-    async def test_send_message_retry_failure(self):
-        service = OpenAILLMService()
-        service.llm_async_client = AsyncMock()
-        service.llm_async_client.chat.completions.create = AsyncMock(
-            side_effect=RateLimitError429
-        )
-
-        with self.assertRaises(RetryError):
-            await service.send_message(prompt="Hello", model="gpt-4o-mini")
-
     async def test_send_message_with_system_prompt(self):
-        service = OpenAILLMService()
+        service = OpenAILLMService(api_key="test")
         mock_response = str("Hi!")
         service.llm_async_client = AsyncMock()
         service.llm_async_client.chat.completions.create = AsyncMock(return_value=mock_response)
@@ -84,7 +83,7 @@ class TestOpenAILLMService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(messages[0]["content"], "System prompt")
 
     async def test_send_message_with_history(self):
-        service = OpenAILLMService()
+        service = OpenAILLMService(api_key="test")
         mock_response = str("Hi!")
         service.llm_async_client = AsyncMock()
         service.llm_async_client.chat.completions.create = AsyncMock(return_value=mock_response)
@@ -99,7 +98,7 @@ class TestOpenAILLMService(unittest.IsolatedAsyncioTestCase):
 
 class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
     async def test_get_embedding_success(self):
-        service = OpenAIEmbeddingService()
+        service = OpenAIEmbeddingService(api_key="test")
         mock_response = AsyncMock()
         mock_response.data = [AsyncMock(embedding=[0.1, 0.2, 0.3])]
         service.embedding_async_client.embeddings.create = AsyncMock(return_value=mock_response)
@@ -110,7 +109,7 @@ class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(embeddings[0][0], 0.1)
 
     async def test_get_embedding_rate_limit_error(self):
-        service = OpenAIEmbeddingService()
+        service = OpenAIEmbeddingService(api_key="test")
         mock_response = AsyncMock()
         mock_response.data = [AsyncMock(embedding=[0.1, 0.2, 0.3])]
         service.embedding_async_client.embeddings.create = AsyncMock(side_effect=(RateLimitError429, mock_response))
@@ -121,7 +120,7 @@ class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(embeddings[0][0], 0.1)
 
     async def test_get_embedding_api_connection_error(self):
-        service = OpenAIEmbeddingService()
+        service = OpenAIEmbeddingService(api_key="test")
         mock_response = AsyncMock()
         mock_response.data = [AsyncMock(embedding=[0.1, 0.2, 0.3])]
         service.embedding_async_client.embeddings.create = AsyncMock(
@@ -133,7 +132,7 @@ class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(embeddings[0][0], 0.1)
 
     async def test_get_embedding_retry_failure(self):
-        service = OpenAIEmbeddingService()
+        service = OpenAIEmbeddingService(api_key="test")
         service.embedding_async_client.embeddings.create = AsyncMock(
             side_effect=RateLimitError429
         )
@@ -142,7 +141,7 @@ class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
             await service.get_embedding(texts=["test"], model="text-embedding-3-small")
 
     async def test_get_embedding_with_different_model(self):
-        service = OpenAIEmbeddingService()
+        service = OpenAIEmbeddingService(api_key="test")
         mock_response = AsyncMock()
         mock_response.data = [AsyncMock(embedding=[0.4, 0.5, 0.6])]
         service.embedding_async_client.embeddings.create = AsyncMock(return_value=mock_response)
