@@ -1,7 +1,7 @@
 """This module implements a Graph-based Retrieval-Augmented Generation (GraphRAG) system."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generic, List, Optional, Union
+from typing import Any, Dict, Generic, List, Optional, Tuple, Union
 
 from fast_graphrag._llm import BaseLLMService, format_and_send_prompt
 from fast_graphrag._llm._base import BaseEmbeddingService
@@ -75,7 +75,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         content: Union[str, List[str]],
         metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
         params: Optional[InsertParam] = None,
-    ) -> None:
+    ) -> Tuple[int, int, int]:
         return get_event_loop().run_until_complete(self.async_insert(content, metadata, params))
 
     async def async_insert(
@@ -83,7 +83,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         content: Union[str, List[str]],
         metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
         params: Optional[InsertParam] = None,
-    ) -> None:
+    ) -> Tuple[int, int, int]:
         """Insert a new memory or memories into the graph.
 
         Args:
