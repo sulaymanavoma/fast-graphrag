@@ -131,3 +131,15 @@ class BaseStateManagerService(Generic[GTNode, GTEdge, GTHash, GTChunk, GTId, GTE
     ) -> Optional[TContext[GTNode, GTEdge, GTHash, GTChunk]]:
         """Retrieve relevant state from the storage."""
         raise NotImplementedError
+
+    async def get_num_entities(self) -> int:
+        """Get the number of entities in the storage."""
+        raise NotImplementedError
+
+    async def get_num_relations(self) -> int:
+        """Get the number of relations in the storage."""
+        raise NotImplementedError
+
+    async def get_num_chunks(self) -> int:
+        """Get the number of chunks in the storage."""
+        raise NotImplementedError

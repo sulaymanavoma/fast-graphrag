@@ -51,6 +51,15 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
             namespace=self.workspace.make_for("map_r2c"), config=None
         )
 
+    async def get_num_entities(self) -> int:
+        return await self.graph_storage.node_count()
+
+    async def get_num_relations(self) -> int:
+        return await self.graph_storage.edge_count()
+
+    async def get_num_chunks(self) -> int:
+        return await self.chunk_storage.size()
+
     async def filter_new_chunks(self, chunks_per_data: Iterable[Iterable[TChunk]]) -> List[List[TChunk]]:
         flattened_chunks = [chunk for chunks in chunks_per_data for chunk in chunks]
         if len(flattened_chunks) == 0:
