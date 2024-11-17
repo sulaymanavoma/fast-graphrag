@@ -10,8 +10,8 @@ from fast_graphrag._storage._vdb_hnswlib import HNSWVectorStorage, HNSWVectorSto
 
 class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.config = HNSWVectorStorageConfig(embedding_dim=128)
-        self.storage = HNSWVectorStorage(config=self.config)
+        self.config = HNSWVectorStorageConfig()
+        self.storage = HNSWVectorStorage(config=self.config, embedding_dim=128)
         self.storage._index = MagicMock()
         self.storage._index.get_current_count.return_value = 0
 
@@ -95,7 +95,7 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
 
         await self.storage._insert_start()
 
-        mock_index.assert_called_with(space="cosine", dim=self.config.embedding_dim)
+        mock_index.assert_called_with(space="cosine", dim=self.storage.embedding_dim)
         self.storage._index.load_index.assert_called_with(
             "dummy_path_hnsw_index_128.bin", max_elements=self.config.max_elements
         )
@@ -111,7 +111,7 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
 
         await self.storage._insert_start()
 
-        mock_index.assert_called_with(space="cosine", dim=self.config.embedding_dim)
+        mock_index.assert_called_with(space="cosine", dim=self.storage.embedding_dim)
         self.storage._index.init_index.assert_called_with(
             max_elements=self.config.max_elements,
             ef_construction=self.config.ef_construction,
@@ -128,7 +128,7 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
 
         await self.storage._insert_start()
 
-        mock_index.assert_called_with(space="cosine", dim=self.config.embedding_dim)
+        mock_index.assert_called_with(space="cosine", dim=self.storage.embedding_dim)
         self.storage._index.init_index.assert_called_with(
             max_elements=self.config.max_elements,
             ef_construction=self.config.ef_construction,
@@ -163,7 +163,7 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
 
         await self.storage._query_start()
 
-        mock_index.assert_called_with(space="cosine", dim=self.config.embedding_dim)
+        mock_index.assert_called_with(space="cosine", dim=self.storage.embedding_dim)
         self.storage._index.load_index.assert_called_with(
             "dummy_path_hnsw_index_128.bin", max_elements=self.config.max_elements
         )
@@ -179,7 +179,7 @@ class TestHNSWVectorStorage(unittest.IsolatedAsyncioTestCase):
 
         await self.storage._query_start()
 
-        mock_index.assert_called_with(space="cosine", dim=self.config.embedding_dim)
+        mock_index.assert_called_with(space="cosine", dim=self.storage.embedding_dim)
         self.assertEqual(self.storage._metadata, {})
         self.assertEqual(self.storage._current_elements, 0)
         mock_logger.warning.assert_called_with(
