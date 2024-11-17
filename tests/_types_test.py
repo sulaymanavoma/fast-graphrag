@@ -39,7 +39,7 @@ class TestTypes(unittest.TestCase):
         self.assertEqual(entity.type, "Type1")
         self.assertEqual(entity.description, "Description1")
 
-        pydantic_entity = TEntity.Model(name="Entity1", type="Type1", description="Description1")
+        pydantic_entity = TEntity.Model(name="Entity1", type="Type1", desc="Description1")
         entity.name = entity.name.upper()
         entity.type = entity.type.upper()
         self.assertEqual(asdict(entity), asdict(pydantic_entity.to_dataclass(pydantic_entity)))
@@ -59,7 +59,7 @@ class TestTypes(unittest.TestCase):
         self.assertEqual(relation.description, "Relation description")
 
         pydantic_relation = TRelation.Model(
-            source_entity="Entity1", target_entity="Entity2", description="Relation description"
+            source="Entity1", target="Entity2", desc="Relation description"
         )
 
         relation.source = relation.source.upper()
@@ -74,10 +74,11 @@ class TestTypes(unittest.TestCase):
         self.assertEqual(graph.relationships, [relation])
 
         pydantic_graph = TGraph.Model(
-            entities=[TEntity.Model(name="Entity1", type="Type1", description="Description1")],
+            entities=[TEntity.Model(name="Entity1", type="Type1", desc="Description1")],
             relationships=[
-                TRelation.Model(source_entity="Entity1", target_entity="Entity2", description="Relation description")
+                TRelation.Model(source="Entity1", target="Entity2", desc="Relation description")
             ],
+            other_relationships=[]
         )
 
         for entity in graph.entities:
