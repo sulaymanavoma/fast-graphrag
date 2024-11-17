@@ -73,7 +73,6 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
         if top_k > self.config.ef_search:
             self._index.set_ef(top_k)
-        logger.error(top_k)
 
         ids, distances = self._index.knn_query(data=embeddings, k=top_k, num_threads=self.config.num_threads)
 
@@ -95,7 +94,6 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         if top_k > self.config.ef_search:
             self._index.set_ef(top_k)
 
-        logger.error(top_k)
         ids, distances = self._index.knn_query(data=embeddings, k=top_k, num_threads=self.config.num_threads)
 
         ids = np.array(ids)
