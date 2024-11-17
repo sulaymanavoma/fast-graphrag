@@ -73,6 +73,7 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
         if top_k > self.config.ef_search:
             self._index.set_ef(top_k)
+        logger.error(top_k)
 
         ids, distances = self._index.knn_query(data=embeddings, k=top_k, num_threads=self.config.num_threads)
 
@@ -90,6 +91,11 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
             logger.warning(f"No provided embeddings ({embeddings.size}) or empty index ({self._current_elements}).")
             return csr_matrix((0, self._current_elements))
 
+        top_k = min(top_k, self._current_elements)
+        if top_k > self.config.ef_search:
+            self._index.set_ef(top_k)
+
+        logger.error(top_k)
         ids, distances = self._index.knn_query(data=embeddings, k=top_k, num_threads=self.config.num_threads)
 
         ids = np.array(ids)
