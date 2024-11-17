@@ -23,6 +23,10 @@ class InsertParam:
 @dataclass
 class QueryParam:
     with_references: bool = False
+    only_context: bool = False
+    entities_max_tokens: int = 4000
+    relationships_max_tokens: int = 3000
+    chunks_max_tokens: int = 9000
 
 
 @dataclass
@@ -117,6 +121,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
                     "example_queries": self.example_queries,
                     "entity_types": ",".join(self.entity_types),
                 },
+                entity_types=self.entity_types
             )
             if len(subgraphs) == 0:
                 logger.info("No new entities or relationships extracted from the data.")
@@ -171,20 +176,23 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
             )
 
         # Ask LLM
-        llm_response, _ = await format_and_send_prompt(
-            prompt_key="generate_response_query",
-            llm=self.llm_service,
-            format_kwargs={
-                "query": query,
-                "context": relevant_state.to_str(
-                    {
-                        "entities": 4000 * TOKEN_TO_CHAR_RATIO,
-                        "relationships": 3000 * TOKEN_TO_CHAR_RATIO,
-                        "chunks": 9000 * TOKEN_TO_CHAR_RATIO,
-                    }
-                ),
-            },
-            response_model=str,
-        )
+        if params.only_context:
+            llm_response = ""
+        else:
+            llm_response, _ = await format_and_send_prompt(
+                prompt_key="generate_response_query",
+                llm=self.llm_service,
+                format_kwargs={
+                    "query": query,
+                    "context": relevant_state.to_str(
+                        {
+                            "entities": params.entities_max_tokens * TOKEN_TO_CHAR_RATIO,
+                            "relationships": params.relationships_max_tokens * TOKEN_TO_CHAR_RATIO,
+                            "chunks": params.chunks_max_tokens * TOKEN_TO_CHAR_RATIO,
+                        }
+                    ),
+                },
+                response_model=str,
+            )
 
         return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](response=llm_response, context=relevant_state)

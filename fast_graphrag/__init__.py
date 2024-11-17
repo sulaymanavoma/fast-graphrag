@@ -1,5 +1,7 @@
 """Top-level package for GraphRAG."""
 
+__all__ = ["GraphRAG", "QueryParam"]
+
 from dataclasses import dataclass, field
 from typing import Type
 
@@ -32,7 +34,7 @@ from fast_graphrag._storage import (
 from fast_graphrag._storage._namespace import Workspace
 from fast_graphrag._types import TChunk, TEmbedding, TEntity, THash, TId, TIndex, TRelation
 
-from ._graphrag import BaseGraphRAG
+from ._graphrag import BaseGraphRAG, QueryParam
 
 
 @dataclass
