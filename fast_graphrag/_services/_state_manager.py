@@ -35,7 +35,7 @@ from ._base import BaseStateManagerService
 @dataclass
 class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THash, TChunk, TId, TEmbedding]):
     blob_storage_cls: Type[BaseBlobStorage[csr_matrix]] = field(default=PickleBlobStorage)
-    similarity_score_threshold: float = field(default=0.8)
+    similarity_score_threshold: float = field(default=0.75)
 
     def __post_init__(self):
         assert self.workspace is not None, "Workspace must be provided."
@@ -86,20 +86,20 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
             return (nodes, edges)
 
-        progress_bar = tqdm(total=8, disable=not show_progress, desc="Extracting subgraphs")
         graphs = [r for graph in tqdm(
             asyncio.as_completed([_get_graphs(fgraph) for fgraph in subgraphs]),
             total=len(subgraphs),
-            leave=False,
+            desc="Extracting data",
             disable=not show_progress,
         ) if (r := await graph) is not None]
+
         if len(graphs) == 0:
             return
-        progress_bar.update(1)
 
+        progress_bar = tqdm(total=7, disable=not show_progress, desc="Building...")
         # STEP (2): Upserting nodes and edges
         nodes, edges = zip(*graphs)
-        progress_bar.set_description("Upserting nodes and edges")
+        progress_bar.set_description("Building... [upserting graphs]")
 
         _, upserted_nodes = await self.node_upsert_policy(llm, self.graph_storage, chain(*nodes))
         progress_bar.update(1)
@@ -107,7 +107,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         progress_bar.update(1)
 
         # STEP (2): Computing entity embeddings
-        progress_bar.set_description("Computing entity embeddings")
+        progress_bar.set_description("Building... [computing embeddings]")
         # Insert entities in entity_storage
         embeddings = await self.embedding_service.get_embedding(texts=[d.to_str() for _, d in upserted_nodes])
         progress_bar.update(1)
@@ -117,7 +117,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         # STEP: Entity deduplication
         # Note that get_knn will very likely return the same entity as the most similar one, so we remove it
         # when selecting the index order.
-        progress_bar.set_description("Entity deduplication")
+        progress_bar.set_description("Building... [entity deduplication]")
         upserted_indices = np.array([i for i, _ in upserted_nodes]).reshape(-1, 1)
         similar_indices, scores = await self.entity_storage.get_knn(embeddings, top_k=5)
         similar_indices = np.array(similar_indices)
@@ -137,7 +137,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         # | 1             | 0, 7, 12, 0, 9         |
 
         # STEP: insert identity edges
-        progress_bar.set_description("Inserting identity edges")
+        progress_bar.set_description("Building... [identity edges]")
         async def _insert_identiy_edges(
             source_index: TIndex, target_indices: npt.NDArray[np.int32]
         ) -> Iterable[Tuple[TIndex, TIndex]]:
@@ -161,10 +161,11 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
         # STEP: Save chunks
         # Insert chunks in chunk_storage
-        progress_bar.set_description("Inserting chunks")
+        progress_bar.set_description("Building... [saving chunks]")
         flattened_chunks = [chunk for chunks in documents for chunk in chunks]
         await self.chunk_storage.upsert(keys=[chunk.id for chunk in flattened_chunks], values=flattened_chunks)
         progress_bar.update(1)
+        progress_bar.set_description("Building [done]")
 
     async def get_context(
         self, query: str, entities: Iterable[TEntity]
