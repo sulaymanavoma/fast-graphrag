@@ -23,7 +23,7 @@ from fast_graphrag._utils import TOKEN_TO_CHAR_RATIO, logger, throttle_async_fun
 
 from ._base import BaseEmbeddingService, BaseLLMService
 
-TIMEOUT_SECONDS = 300.0
+TIMEOUT_SECONDS = 180.0
 
 @dataclass
 class OpenAILLMService(BaseLLMService):
@@ -38,7 +38,7 @@ class OpenAILLMService(BaseLLMService):
             # TODO: always use JSON with mode=instructor.Mode.JSON
         )
 
-    @throttle_async_func_call(max_concurrent=1024, stagger_time=0.002, waitting_time=0.001)
+    @throttle_async_func_call(max_concurrent=2048, stagger_time=0.001, waitting_time=0.001)
     async def send_message(
         self,
         prompt: str,
