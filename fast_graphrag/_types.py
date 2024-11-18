@@ -145,7 +145,7 @@ class TEntity(BTResponseModel, BTNode):
     def to_str(self) -> str:
         s = f"[NAME] {self.name}"
         if len(self.description):
-            s += f" [DESCRIPTION] {self.description}"
+            s += f"  [DESCRIPTION] {self.description}"
         return s
 
     class Model(BTResponseModel.Model, metaclass=MetaModel, alias="Entity"):

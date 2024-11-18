@@ -35,7 +35,7 @@ from ._base import BaseStateManagerService
 @dataclass
 class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THash, TChunk, TId, TEmbedding]):
     blob_storage_cls: Type[BaseBlobStorage[csr_matrix]] = field(default=PickleBlobStorage)
-    similarity_score_threshold: float = field(default=0.75)
+    similarity_score_threshold: float = field(default=0.8)
 
     def __post_init__(self):
         assert self.workspace is not None, "Workspace must be provided."
