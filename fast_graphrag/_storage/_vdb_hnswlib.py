@@ -16,7 +16,6 @@ from ._base import BaseVectorStorage
 
 @dataclass
 class HNSWVectorStorageConfig:
-    embedding_dim: int = field()
     ef_construction: int = field(default=128)
     M: int = field(default=48)
     max_elements: int = field(default=1000000)
