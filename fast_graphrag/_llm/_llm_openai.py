@@ -34,8 +34,7 @@ class OpenAILLMService(BaseLLMService):
     def __post_init__(self):
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
         self.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(
-            AsyncOpenAI(api_key=self.api_key, timeout=TIMEOUT_SECONDS)
-            # TODO: always use JSON with mode=instructor.Mode.JSON
+            AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS)
         )
 
     @throttle_async_func_call(max_concurrent=2048, stagger_time=0.001, waitting_time=0.001)
@@ -117,7 +116,7 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
     model: Optional[str] = field(default="text-embedding-3-small")
 
     def __post_init__(self):
-        self.embedding_async_client: AsyncOpenAI = AsyncOpenAI(api_key=self.api_key, timeout=TIMEOUT_SECONDS)
+        self.embedding_async_client: AsyncOpenAI = AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS)
         logger.debug("Initialized OpenAIEmbeddingService with OpenAI client.")
 
     async def get_embedding(
@@ -173,6 +172,3 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
     )
     async def _embedding_request(self, input: List[str], model: str) -> Any:
         return await self.embedding_async_client.embeddings.create(model=model, input=input, encoding_format="float")
-
-    def validate_embedding_dim(self, embedding_dim: int) -> bool:
-        return embedding_dim == self.embedding_dim

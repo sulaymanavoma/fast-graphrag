@@ -68,7 +68,7 @@ class GraphRAG(BaseGraphRAG[TEmbedding, THash, TChunk, TEntity, TRelation, TId])
         )
         entity_storage: DefaultVectorStorage[TIndex, TEmbedding] = field(
             default_factory=lambda: DefaultVectorStorage(
-                DefaultVectorStorageConfig(embedding_dim=DefaultEmbeddingService().embedding_dim)
+                DefaultVectorStorageConfig()
             )
         )
         chunk_storage: DefaultIndexedKeyValueStorage[THash, TChunk] = field(
@@ -91,6 +91,10 @@ class GraphRAG(BaseGraphRAG[TEmbedding, THash, TChunk, TEntity, TRelation, TId])
             default_factory=lambda: EdgeUpsertPolicy_UpsertValidAndMergeSimilarByLLM()
         )
 
+        def __post_init__(self):
+            """Initialize the GraphRAG Config class."""
+            self.entity_storage.embedding_dim = self.embedding_service.embedding_dim
+
     config: Config = field(default_factory=Config)
 
     def __post_init__(self):
@@ -112,5 +116,3 @@ class GraphRAG(BaseGraphRAG[TEmbedding, THash, TChunk, TEntity, TRelation, TId])
             node_upsert_policy=self.config.node_upsert_policy,
             edge_upsert_policy=self.config.edge_upsert_policy,
         )
-
-        super().__post_init__()

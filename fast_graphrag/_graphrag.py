@@ -64,12 +64,6 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         ),
     )
 
-    def __post_init__(self):
-        if not self.state_manager.embedding_service.validate_embedding_dim(
-            self.state_manager.entity_storage.embedding_dim
-        ):
-            raise ValueError("Embedding dimension mismatch between the embedding service and the entity storage.")
-
     def insert(
         self,
         content: Union[str, List[str]],

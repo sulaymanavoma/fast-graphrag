@@ -98,14 +98,3 @@ class BaseEmbeddingService:
             list[float]: The embedding vector as a list of floats.
         """
         raise NotImplementedError
-
-    def validate_embedding_dim(self, embedding_dim: int) -> bool:
-        """Validate the embedding dimension.
-
-        Args:
-            embedding_dim (int): The embedding dimension to validate.
-
-        Returns:
-            bool: True if the embedding dimension is valid, False otherwise.
-        """
-        raise NotImplementedError

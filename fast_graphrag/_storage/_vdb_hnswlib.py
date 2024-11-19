@@ -33,10 +33,6 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
     _metadata: Dict[GTId, Dict[str, Any]] = field(default_factory=dict)
     _current_elements: int = field(init=False, default=0)
 
-    @property
-    def embedding_dim(self) -> int:
-        return self.config.embedding_dim
-
     async def upsert(
         self,
         ids: Iterable[GTId],
@@ -113,10 +109,10 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         return scores
 
     async def _insert_start(self):
-        self._index = hnswlib.Index(space="cosine", dim=self.config.embedding_dim)  # type: ignore
+        self._index = hnswlib.Index(space="cosine", dim=self.embedding_dim)  # type: ignore
 
         if self.namespace:
-            index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
+            index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.embedding_dim))
             metadata_file_name = self.namespace.get_load_path(self.RESOURCE_METADATA_NAME)
 
             if index_file_name and metadata_file_name:
@@ -147,7 +143,7 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
     async def _insert_done(self):
         if self.namespace:
-            index_file_name = self.namespace.get_save_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
+            index_file_name = self.namespace.get_save_path(self.RESOURCE_NAME.format(self.embedding_dim))
             metadata_file_name = self.namespace.get_save_path(self.RESOURCE_METADATA_NAME)
 
             try:
@@ -162,9 +158,9 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
     async def _query_start(self):
         assert self.namespace, "Loading a vectordb requires a namespace."
-        self._index = hnswlib.Index(space="cosine", dim=self.config.embedding_dim)  # type: ignore
+        self._index = hnswlib.Index(space="cosine", dim=self.embedding_dim)  # type: ignore
 
-        index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.config.embedding_dim))
+        index_file_name = self.namespace.get_load_path(self.RESOURCE_NAME.format(self.embedding_dim))
         metadata_file_name = self.namespace.get_load_path(self.RESOURCE_METADATA_NAME)
         if index_file_name and metadata_file_name:
             try:

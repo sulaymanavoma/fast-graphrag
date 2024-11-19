@@ -164,9 +164,7 @@ class BaseIndexedKeyValueStorage(BaseStorage, Generic[GTKey, GTValue]):
 
 @dataclass
 class BaseVectorStorage(BaseStorage, Generic[GTId, GTEmbedding]):
-    @property
-    def embedding_dim(self) -> int:
-        raise NotImplementedError
+    embedding_dim: int = field(default=0)
 
     async def get_knn(
         self, embeddings: Iterable[GTEmbedding], top_k: int

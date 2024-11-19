@@ -24,7 +24,7 @@ grag = GraphRAG(
             model="your-embedding-model",
             base_url="api.url.com",
             api_key="your-api-key",
-            embedding_dim=512,  # the output embedding dim, the embedding dim of vector storage must match this value
+            embedding_dim=512,  # the output embedding dim of the chosen model
         ),
     ),
 )
