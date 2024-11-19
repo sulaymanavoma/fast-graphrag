@@ -31,7 +31,7 @@ class OpenAILLMService(BaseLLMService):
 
     def __post_init__(self):
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
-        self.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(AsyncOpenAI(api_key=self.api_key))
+        self.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(AsyncOpenAI(base_url=self.base_url, api_key=self.api_key))
 
     @retry(
         stop=stop_after_attempt(3),
