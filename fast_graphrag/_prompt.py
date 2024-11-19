@@ -11,85 +11,54 @@ PROMPTS["entity_relationship_extraction"] = """You are a helpful assistant that 
 {domain}
 
 # GOAL
-Given a document that is potentially relevant to the given domain and a list of entity types, first, identify all present entities of those types and, then, all relationships among the identified entities.
-The entities will be grouped according to their relationships and used by decision-makers to generate reports and answer domain-specific questions. Your goal is to highlight information that is relevant to the domain and the questions that may be asked on it.
+Given a document and a list of types, first, identify all present entities of those types and, then, all relationships among the identified entities.
+Your goal is to highlight information that is relevant to the domain and the questions that may be asked on it.
 
-Examples of possible domain-specific questions:
+Examples of possible questions:
 {example_queries}
 
 # STEPS
-1. Identify all entities. Make sure to identify all relevant entities. Make sure to resolve pronouns to their specific named entities.
-2. From the entities identified in step 1, identify all relationships between pairs of (source_entity, target_entity).
+1. Identify all entities of the given types. Make sure to extract all and only the entities that are of one of the given types, ignore the others. Use singular names and split compound concepts when necessary (for example, from the sentence "they are movie and theater directors", you should extract the entities "movie director" and "theater director").
+2. Identify all relationships between the entities found in step 1. Clearly resolve pronouns to their specific names to maintain clarity.
+3. Double check that each entity identified in step 1 appears in at least one relationship. If not, add the missing relationships.
 
 # EXAMPLE DATA
-Entity types: [person, role, technology, organization, event, location, concept]
-Document:
-Their voice slicing through the buzz of activity. "Control may be an illusion when facing an intelligence that literally writes its own rules," they stated stoically, casting a watchful eye over the flurry of data.
-"It's like it's learning to communicate," offered Sam Rivera from a nearby interface, their youthful energy boding a mix of awe and anxiety. "This gives talking to strangers' a whole new meaning."
-Alex surveyed his team—each face a study in concentration, determination, and not a small measure of trepidation. "This might well be our first contact," he acknowledged, "And we need to be ready for whatever answers back."
-Together, they stood on the edge of the unknown, forging humanity's response to a message from the heavens. The ensuing silence was palpable—a collective introspection about their role in this grand cosmic play, one that could rewrite human history.
-The encrypted dialogue continued to unfold, its intricate patterns showing an almost uncanny anticipation
+Types: [location, organization, person, communication]
+Document: Radio City: Radio City is India's first private FM radio station and was started on 3 July 2001. It plays Hindi, English and regional songs. Radio City recently forayed into New Media in May 2008 with the launch of a music portal - PlanetRadiocity.com that offers music related news, videos, songs, and other music-related features."
 
 Output:
 {{
-    'entities': [
-        {{
-            'name': 'SAM RIVERA',
-            'type': 'person',
-            'description': 'Sam Rivera is a member of a team working on communicating with an unknown intelligence, showing a mix of awe and anxiety.'
-        }},
-        {{
-            'name': 'ALEX',
-            'type': 'person',
-            'description': 'Alex is the leader of a team attempting first contact with an unknown intelligence, acknowledging the significance of their task.'
-        }},
-        {{
-            'name': 'CONTROL',
-            'type': 'concept',
-            'description': 'Control refers to the ability to manage or govern, which is challenged by an intelligence that writes its own rules.'
-        }},
-        {{
-            'name': 'INTELLIGENCE',
-            'type': 'concept',
-            'description': 'Intelligence here refers to an unknown entity capable of writing its own rules and learning to communicate.'
-        }},
-        {{
-            'name': 'FIRST CONTACT',
-            'type': 'event',
-            'description': 'First Contact is the potential initial communication between humanity and an unknown intelligence.'
-        }},
-        {{
-            'name': 'HUMANITY'S RESPONSE',
-            'type': 'event',
-            'description': 'Humanity's Response is the collective action taken by Alex's team in response to a message from an unknown intelligence.'
-        }}
-    ]
-    'relationships': [
-        {{
-            'source_entity': 'SAM RIVERA',
-            'target_entity': 'INTELLIGENCE',
-            'description': 'Sam Rivera is directly involved in the process of learning to communicate with the unknown intelligence.'
-        }},
-        {{
-            'source_entity': 'ALEX',
-            'target_entity': 'FIRST CONTACT',
-            'description': 'Alex leads the team that might be making the First Contact with the unknown intelligence.'
-        }},
-        {{
-            'source_entity': 'ALEX',
-            'target_entity': 'HUMANITY'S RESPONSE',
-            'description': 'Alex and his team are the key figures in Humanity's Response to the unknown intelligence.'
-        }},
-        {{
-            'source_entity': 'CONTROL',
-            'target_entity': 'INTELLIGENCE',
-            'description': 'The concept of Control is challenged by the Intelligence that writes its own rules.'
-        }},
-    ]
+	'entities': [
+	{{'name': 'Radio City', 'type': 'organization', 'desc': "Radio City is India's first private FM radio station."}},
+	{{'name': 'India', 'type': 'location', 'desc': "The country of India."}},
+	{{'name': 'FM radio station', 'type': 'communication', 'desc': "A radio station that broadcasts using frequency modulation."}},
+	{{'name': 'English', 'type': 'communication', 'desc': "The English language."}},
+	{{'name': 'Hindi', 'type': 'communication', 'desc': "The Hindi language."}},
+	{{'name': 'New Media', 'type': 'communication', 'desc': "New Media is a term for all forms of media that are digital and/or interactive."}},
+	{{'name': 'PlanetRadiocity.com', 'type': 'organization', 'desc': "PlanetRadiocity.com is an online music portal."}},
+	{{'name': 'music portal', 'type': 'communication', 'desc': "A website that offers music related information."}},
+	{{'name': 'news', 'type': 'communication', 'desc': "The concept of news."}},
+	{{'name': 'video', 'type': 'communication', 'desc': "The concept of a video."}},
+	{{'name': 'song', 'type': 'communication', 'desc': "The concept of a song."}}
+	],
+	'relationships': [
+	{{'source': 'Radio City', 'target': 'India', 'desc': 'Radio City is located in India.'}},
+	{{'source': 'Radio City', 'target': 'FM radio station', 'desc': 'Radio City is a private FM radio station started on 3 July 2001.'}},
+	{{'source': 'Radio City', 'target': 'English', 'desc': 'Radio City broadcasts English songs.'}},
+	{{'source': 'Radio City', 'target': 'Hindi', 'desc': 'Radio City broadcasts songs in the Hindi language.'}},
+	{{'source': 'Radio City', 'target': 'PlanetRadiocity.com', 'desc': 'Radio City launched PlanetRadiocity.com in May 2008.'}},
+	{{'source': 'PlanetRadiocity.com', 'target': 'music portal', 'desc': 'PlanetRadiocity.com is a music portal that offers music related news, videos and more.'}}
+	],
+	'other_relationships': [
+	{{'source': 'Radio City', 'target': 'New Media', 'desc': 'Radio City forayed into New Media in May 2008.'}},
+	{{'source': 'PlanetRadiocity.com', 'target': 'news', 'desc': 'PlanetRadiocity.com offers music related news.'}},
+	{{'source': 'PlanetRadiocity.com', 'target': 'video', 'desc': 'PlanetRadiocity.com offers music related videos.'}},
+	{{'source': 'PlanetRadiocity.com', 'target': 'song', 'desc': 'PlanetRadiocity.com offers songs.'}}
+	]
 }}
 
 # REAL DATA
-Entity types: {entity_types}
+Types: {entity_types}
 Document: {input_text}
 
 Output:
@@ -99,20 +68,15 @@ PROMPTS["entity_relationship_continue_extraction"] = "MANY entities were missed 
 
 PROMPTS["entity_relationship_gleaning_done_extraction"] = "Retrospectively check if all entities have been correctly identified: answer done if so, or continue if there are still entities that need to be added."
 
-PROMPTS["entity_extraction_query"] = """You are a helpful assistant that helps a human analyst identify all the named entities present in the input query that may be important for answering the query.
-Each element you extract will be used to search a knowledge base to gather relevant information to answer the query.
+PROMPTS["entity_extraction_query"] = """You are a helpful assistant that helps a human analyst identify all the named entities present in the input query that are important for answering the query.
 
-# GOAL
-Given the input query, extract all named entities present in the query.
-
-# EXAMPLE 1
+# Example 1
 Query: Do the magazines Arthur's Magazine or First for Women have the same publisher?
-Ouput: {{"entities": ["First for Women", "Arthur's Magazine"], "n": 2}}
+Ouput: {{"entities": ["Arthur's Magazine", "First for Women"], "n": 2}}
 
-# EXAMPLE 2
-Query: When did Luca's mother die?
-Ouput: {{"entities": ["Luca"], "n": 1}}
-
+# Example 2
+Query: Which film has the director who was born earlier, Avatar II: The Return or The Interstellar?
+Ouput: {{"entities": ["Avatar II: The Return", "The Interstellar"], "n": 2}}
 
 # INPUT
 Query: {query}
@@ -121,7 +85,7 @@ Output:
 
 
 PROMPTS[
-    "summarize_entity_descriptions"
+	"summarize_entity_descriptions"
 ] = """You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.
 Given the current description, summarize it in a shorter but comprehensive description. Make sure to include all important information.
 If the provided description is contradictory, please resolve the contradictions and provide a single, coherent summary.
@@ -135,7 +99,7 @@ Updated description:
 
 
 PROMPTS[
-    "edges_group_similar"
+	"edges_group_similar"
 ] = """You are a helpful assistant responsible for maintaining a list of facts describing the relations between two entities so that information is not redundant.
 Given a list of ids and facts, identify any facts that should be grouped together as they contain similar or duplicated information and provide a new summarized description for the group.
 
@@ -149,16 +113,16 @@ Facts (id, description):
 
 Ouput:
 {{
-    grouped_facts: [
-        {{
-            'ids': [0, 3],
-            'description': 'Mark is the father of Luke'
-        }},
-        {{
-            'ids': [1, 4],
-            'description': 'Mark and Luke love each other very much'
-        }}
-    ]
+	grouped_facts: [
+	{{
+		'ids': [0, 3],
+		'description': 'Mark is the father of Luke'
+	}},
+	{{
+		'ids': [1, 4],
+		'description': 'Mark and Luke love each other very much'
+	}}
+	]
 }}
 
 # INPUT:
@@ -194,24 +158,24 @@ Answer:
 PROMPTS["fail_response"] = "Sorry, I'm not able to provide an answer to that question."
 
 PROMPTS["default_text_separator"] = [
-    # Paragraph separators
-    "\n\n",
-    "\r\n\r\n",
-    # Line breaks
-    "\n",
-    "\r\n",
-    # Sentence ending punctuation
-    "。",  # Chinese period
-    "．",  # Full-width dot
-    ".",  # English period
-    "！",  # Chinese exclamation mark
-    "!",  # English exclamation mark
-    "？",  # Chinese question mark
-    "?",  # English question mark
-    # Whitespace characters
-    " ",  # Space
-    "\t",  # Tab
-    "\u3000",  # Full-width space
-    # Special characters
-    "\u200b",  # Zero-width space (used in some Asian languages)
+	# Paragraph separators
+	"\n\n",
+	"\r\n\r\n",
+	# Line breaks
+	"\n",
+	"\r\n",
+	# Sentence ending punctuation
+	"。",  # Chinese period
+	"．",  # Full-width dot
+	".",  # English period
+	"！",  # Chinese exclamation mark
+	"!",  # English exclamation mark
+	"？",  # Chinese question mark
+	"?",  # English question mark
+	# Whitespace characters
+	" ",  # Space
+	"\t",  # Tab
+	"\u3000",  # Full-width space
+	# Special characters
+	"\u200b",  # Zero-width space (used in some Asian languages)
 ]

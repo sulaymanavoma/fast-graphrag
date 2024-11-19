@@ -16,10 +16,11 @@ from ._base import BaseVectorStorage
 
 @dataclass
 class HNSWVectorStorageConfig:
-    ef_construction: int = field(default=48)
+    embedding_dim: int = field()
+    ef_construction: int = field(default=128)
     M: int = field(default=48)
     max_elements: int = field(default=1000000)
-    ef_search: int = field(default=32)
+    ef_search: int = field(default=64)
     num_threads: int = field(default=-1)
 
 
@@ -85,6 +86,10 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
             logger.warning(f"No provided embeddings ({embeddings.size}) or empty index ({self._current_elements}).")
             return csr_matrix((0, self._current_elements))
 
+        top_k = min(top_k, self._current_elements)
+        if top_k > self.config.ef_search:
+            self._index.set_ef(top_k)
+
         ids, distances = self._index.knn_query(data=embeddings, k=top_k, num_threads=self.config.num_threads)
 
         ids = np.array(ids)
@@ -118,30 +123,23 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
                         logger.debug(
                             f"Loaded {self._current_elements} elements from vectordb storage '{index_file_name}'."
                         )
+                    return  # All good
                 except Exception as e:
                     t = f"Error loading metadata file for vectordb storage '{metadata_file_name}': {e}"
                     logger.error(t)
                     raise InvalidStorageError(t) from e
             else:
                 logger.info(f"No data file found for vectordb storage '{index_file_name}'. Loading empty vectordb.")
-                self._index.init_index(
-                    max_elements=self.config.max_elements,
-                    ef_construction=self.config.ef_construction,
-                    M=self.config.M,
-                )
-                self._index.set_ef(self.config.ef_search)
-                self._metadata = {}
-                self._current_elements = 0
         else:
-            self._index.init_index(
-                max_elements=self.config.max_elements,
-                ef_construction=self.config.ef_construction,
-                M=self.config.M,
-            )
-            self._index.set_ef(self.config.ef_search)
-            self._metadata = {}
-            self._current_elements = 0
             logger.debug("Creating new volatile vectordb storage.")
+        self._index.init_index(
+            max_elements=self.config.max_elements,
+            ef_construction=self.config.ef_construction,
+            M=self.config.M,
+        )
+        self._index.set_ef(self.config.ef_search)
+        self._metadata = {}
+        self._current_elements = 0
 
     async def _insert_done(self):
         if self.namespace:

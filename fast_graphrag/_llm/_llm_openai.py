@@ -10,6 +10,7 @@ import numpy as np
 from openai import APIConnectionError, AsyncOpenAI, RateLimitError
 from pydantic import BaseModel
 from tenacity import (
+    AsyncRetrying,
     retry,
     retry_if_exception_type,
     stop_after_attempt,
@@ -18,10 +19,11 @@ from tenacity import (
 
 from fast_graphrag._exceptions import LLMServiceNoResponseError
 from fast_graphrag._types import BTResponseModel, GTResponseModel
-from fast_graphrag._utils import TOKEN_TO_CHAR_RATIO, logger
+from fast_graphrag._utils import TOKEN_TO_CHAR_RATIO, logger, throttle_async_func_call
 
 from ._base import BaseEmbeddingService, BaseLLMService
 
+TIMEOUT_SECONDS = 180.0
 
 @dataclass
 class OpenAILLMService(BaseLLMService):
@@ -32,14 +34,10 @@ class OpenAILLMService(BaseLLMService):
     def __post_init__(self):
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
         self.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(
-            AsyncOpenAI(base_url=self.base_url, api_key=self.api_key)
+            AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS)
         )
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type((RateLimitError, APIConnectionError)),
-    )
+    @throttle_async_func_call(max_concurrent=2048, stagger_time=0.001, waitting_time=0.001)
     async def send_message(
         self,
         prompt: str,
@@ -82,9 +80,13 @@ class OpenAILLMService(BaseLLMService):
             model=model,
             messages=messages,  # type: ignore
             response_model=response_model.Model
-            if response_model and issubclass(response_model, BTResponseModel)
-            else response_model,
+                if response_model and issubclass(response_model, BTResponseModel)
+                else response_model,
             **kwargs,
+            max_retries=AsyncRetrying(
+                stop=stop_after_attempt(3),
+                wait=wait_exponential(multiplier=1, min=4, max=10)
+            ),
         )
 
         if not llm_response:
@@ -114,14 +116,9 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
     model: Optional[str] = field(default="text-embedding-3-small")
 
     def __post_init__(self):
-        self.embedding_async_client: AsyncOpenAI = AsyncOpenAI(base_url=self.base_url, api_key=self.api_key)
+        self.embedding_async_client: AsyncOpenAI = AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS)
         logger.debug("Initialized OpenAIEmbeddingService with OpenAI client.")
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type((RateLimitError, APIConnectionError)),
-    )
     async def get_embedding(
         self, texts: list[str], model: Optional[str] = None
     ) -> np.ndarray[Any, np.dtype[np.float32]]:
@@ -157,7 +154,7 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
 
         response = await asyncio.gather(
             *[
-                self.embedding_async_client.embeddings.create(model=model, input=chunk, encoding_format="float")
+                self._embedding_request(chunk, model)
                 for chunk in text_chunks
             ]
         )
@@ -167,3 +164,11 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
         logger.debug(f"Received embedding response: {len(embeddings)} embeddings")
 
         return embeddings
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type((RateLimitError, APIConnectionError, TimeoutError)),
+    )
+    async def _embedding_request(self, input: List[str], model: str) -> Any:
+        return await self.embedding_async_client.embeddings.create(model=model, input=input, encoding_format="float")

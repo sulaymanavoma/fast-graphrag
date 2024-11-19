@@ -41,9 +41,7 @@ class BTEdge:
     target: Any
 
     @staticmethod
-    def to_attrs(
-        edge: Optional[Any] = None, edges: Optional[Iterable[Any]] = None, **kwargs: Any
-    ) -> Dict[str, Any]:
+    def to_attrs(edge: Optional[Any] = None, edges: Optional[Iterable[Any]] = None, **kwargs: Any) -> Dict[str, Any]:
         raise NotImplementedError
 
 
@@ -145,16 +143,19 @@ class TEntity(BTResponseModel, BTNode):
     description: str = Field()
 
     def to_str(self) -> str:
-        return f"{self.name}: {self.description}"
+        s = f"[NAME] {self.name}"
+        if len(self.description):
+            s += f"  [DESCRIPTION] {self.description}"
+        return s
 
     class Model(BTResponseModel.Model, metaclass=MetaModel, alias="Entity"):
-        name: str = Field(..., description="The name of the entity.")
-        type: str = Field(..., description="The type of the entity.")
-        description: str = Field(..., description="The description of the entity, in details and comprehensive.")
+        name: str = Field(..., description="The name of the entity")
+        type: str = Field(..., description="The type of the entity")
+        desc: str = Field(..., description="The description of the entity")
 
         @staticmethod
         def to_dataclass(pydantic: "TEntity.Model") -> "TEntity":
-            return TEntity(name=pydantic.name, type=pydantic.type, description=pydantic.description)
+            return TEntity(name=pydantic.name, type=pydantic.type, description=pydantic.desc)
 
         @field_validator("name", mode="before")
         @classmethod
@@ -170,11 +171,9 @@ class TEntity(BTResponseModel, BTNode):
 class TQueryEntities(BaseModel):
     entities: List[str] = Field(
         ...,
-        description=(
-            "The named entities in the query. This list can be empty if there are no meaningful entities in the query."
-        ),
+        description=("The list of entities extracted from the query in the format 'name [type]'"),
     )
-    n: int = Field(..., description="The number of named entities found.")  # So that the LLM can answer 0.
+    n: int = Field(..., description="The number of named entities found")  # So that the LLM can answer 0.
 
     @field_validator("entities", mode="before")
     @classmethod
@@ -197,37 +196,45 @@ class TRelation(BTResponseModel, BTEdge):
         **_,
     ) -> Dict[str, Any]:
         if edge is not None:
-            assert edges is None, "Either edge or edges should be provided, not both."
+            assert edges is None, "Either edge or edges should be provided, not both"
             return {
                 "description": edge.description,
                 "chunks": edge.chunks,
-                **({
-                    "source": edge.source,
-                    "target": edge.target,
-                } if include_source_target else {}),
+                **(
+                    {
+                        "source": edge.source,
+                        "target": edge.target,
+                    }
+                    if include_source_target
+                    else {}
+                ),
             }
         elif edges is not None:
             return {
                 "description": [e.description for e in edges],
                 "chunks": [e.chunks for e in edges],
-                **({
-                    "source": [e.source for e in edges],
-                    "target": [e.target for e in edges],
-                } if include_source_target else {}),
+                **(
+                    {
+                        "source": [e.source for e in edges],
+                        "target": [e.target for e in edges],
+                    }
+                    if include_source_target
+                    else {}
+                ),
             }
         else:
             return {}
 
     class Model(BTResponseModel.Model, metaclass=MetaModel, alias="Relation"):
-        source: str = Field(..., description="The name of the source entity.", alias="source_entity")
-        target: str = Field(..., description="The name of the target entity.", alias="target_entity")
-        description: str = Field(
+        source: str = Field(..., description="The name of the source entity")
+        target: str = Field(..., description="The name of the target entity")
+        desc: str = Field(
             ..., description="The description of the relationship between the source and target entity"
         )
 
         @staticmethod
         def to_dataclass(pydantic: "TRelation.Model") -> "TRelation":
-            return TRelation(source=pydantic.source, target=pydantic.target, description=pydantic.description)
+            return TRelation(source=pydantic.source, target=pydantic.target, description=pydantic.desc)
 
         @field_validator("source", mode="before")
         @classmethod
@@ -246,14 +253,21 @@ class TGraph(BTResponseModel):
     relationships: List[TRelation] = field()
 
     class Model(BTResponseModel.Model, metaclass=MetaModel, alias="Graph"):
-        entities: List[TEntity.Model] = Field(description="The entities in the graph.")
-        relationships: List[TRelation.Model] = Field(description="The relationships between the entities.")
+        entities: List[TEntity.Model] = Field(description="The list of extracted entities")
+        relationships: List[TRelation.Model] = Field(description="The relationships between the entities")
+        other_relationships: List[TRelation.Model] = Field(
+            description=(
+                "Other and missed relationships between the extracted entities"
+                " (likely involving more generic entities)"
+            )
+        )
 
         @staticmethod
         def to_dataclass(pydantic: "TGraph.Model") -> "TGraph":
             return TGraph(
                 entities=[p.to_dataclass(p) for p in pydantic.entities],
-                relationships=[p.to_dataclass(p) for p in pydantic.relationships],
+                relationships=[p.to_dataclass(p) for p in pydantic.relationships]
+                + [p.to_dataclass(p) for p in pydantic.other_relationships],
             )
 
 

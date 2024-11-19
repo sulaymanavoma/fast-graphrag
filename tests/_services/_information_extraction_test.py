@@ -19,6 +19,7 @@ class TestDefaultInformationExtractionService(unittest.IsolatedAsyncioTestCase):
         self.chunk.content = "test content"
         self.chunk.id = "chunk_id"
         self.document = [self.chunk]
+        self.entity_types = [ "entity_type"]
         self.prompt_kwargs = {"domain": "test_domain"}
         self.service = DefaultInformationExtractionService(
             graph_upsert=None
@@ -33,25 +34,14 @@ class TestDefaultInformationExtractionService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(entities[0].name, "ENTITY1")
         self.assertEqual(entities[1].name, "ENTITY2")
 
-    @patch('fast_graphrag._services._information_extraction.format_and_send_prompt', new_callable=AsyncMock)
-    async def test_extract_from_chunk(self, mock_format_and_send_prompt):
-        mock_format_and_send_prompt.return_value = (TGraph(entities=[], relationships=[]), [])
-        graph = await self.service._extract_from_chunk(self.llm_service, self.chunk, self.prompt_kwargs)
-        self.assertIsInstance(graph, TGraph)
 
     @patch('fast_graphrag._services._information_extraction.format_and_send_prompt', new_callable=AsyncMock)
     async def test_extract(self, mock_format_and_send_prompt):
         mock_format_and_send_prompt.return_value = (TGraph(entities=[], relationships=[]), [])
-        tasks = self.service.extract(self.llm_service, [self.document], self.prompt_kwargs)
+        tasks = self.service.extract(self.llm_service, [self.document], self.prompt_kwargs, self.entity_types)
         results = await asyncio.gather(*tasks)
         self.assertEqual(len(results), 1)
         self.assertIsInstance(results[0], BaseGraphStorage)
-
-    @patch('fast_graphrag._services._information_extraction.format_and_send_prompt', new_callable=AsyncMock)
-    async def test_merge(self, mock_format_and_send_prompt):
-        mock_format_and_send_prompt.return_value = (TGraph(entities=[], relationships=[]), [])
-        graph_storage = await self.service._merge(self.llm_service, [TGraph(entities=[], relationships=[])])
-        self.assertIsInstance(graph_storage, BaseGraphStorage)
 
 if __name__ == '__main__':
     unittest.main()

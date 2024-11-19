@@ -1,7 +1,7 @@
 """This module implements a Graph-based Retrieval-Augmented Generation (GraphRAG) system."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generic, List, Optional, Union
+from typing import Any, Dict, Generic, List, Optional, Tuple, Union
 
 from fast_graphrag._llm import BaseLLMService, format_and_send_prompt
 from fast_graphrag._llm._base import BaseEmbeddingService
@@ -23,6 +23,10 @@ class InsertParam:
 @dataclass
 class QueryParam:
     with_references: bool = False
+    only_context: bool = False
+    entities_max_tokens: int = 4000
+    relationships_max_tokens: int = 3000
+    chunks_max_tokens: int = 9000
 
 
 @dataclass
@@ -65,7 +69,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         content: Union[str, List[str]],
         metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
         params: Optional[InsertParam] = None,
-    ) -> None:
+    ) -> Tuple[int, int, int]:
         return get_event_loop().run_until_complete(self.async_insert(content, metadata, params))
 
     async def async_insert(
@@ -73,7 +77,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         content: Union[str, List[str]],
         metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
         params: Optional[InsertParam] = None,
-    ) -> None:
+    ) -> Tuple[int, int, int]:
         """Insert a new memory or memories into the graph.
 
         Args:
@@ -111,12 +115,20 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
                     "example_queries": self.example_queries,
                     "entity_types": ",".join(self.entity_types),
                 },
+                entity_types=self.entity_types
             )
             if len(subgraphs) == 0:
                 logger.info("No new entities or relationships extracted from the data.")
 
             # Update the graph with the new entities, relationships, and chunks
             await self.state_manager.upsert(llm=self.llm_service, subgraphs=subgraphs, documents=new_chunks_per_data)
+
+            # Return the total number of entities, relationships, and chunks
+            return (
+                await self.state_manager.get_num_entities(),
+                await self.state_manager.get_num_relations(),
+                await self.state_manager.get_num_chunks(),
+            )
         except Exception as e:
             logger.error(f"Error during insertion: {e}")
             raise e
@@ -165,20 +177,23 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
             )
 
         # Ask LLM
-        llm_response, _ = await format_and_send_prompt(
-            prompt_key="generate_response_query",
-            llm=self.llm_service,
-            format_kwargs={
-                "query": query,
-                "context": relevant_state.to_str(
-                    {
-                        "entities": 4000 * TOKEN_TO_CHAR_RATIO,
-                        "relationships": 3000 * TOKEN_TO_CHAR_RATIO,
-                        "chunks": 9000 * TOKEN_TO_CHAR_RATIO,
-                    }
-                ),
-            },
-            response_model=str,
-        )
+        if params.only_context:
+            llm_response = ""
+        else:
+            llm_response, _ = await format_and_send_prompt(
+                prompt_key="generate_response_query",
+                llm=self.llm_service,
+                format_kwargs={
+                    "query": query,
+                    "context": relevant_state.to_str(
+                        {
+                            "entities": params.entities_max_tokens * TOKEN_TO_CHAR_RATIO,
+                            "relationships": params.relationships_max_tokens * TOKEN_TO_CHAR_RATIO,
+                            "chunks": params.chunks_max_tokens * TOKEN_TO_CHAR_RATIO,
+                        }
+                    ),
+                },
+                response_model=str,
+            )
 
         return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](response=llm_response, context=relevant_state)
