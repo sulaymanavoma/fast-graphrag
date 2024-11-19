@@ -31,7 +31,7 @@ class OpenAILLMService(BaseLLMService):
 
     def __post_init__(self):
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
-        self.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(AsyncOpenAI(api_key=self.api_key))
+        self.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(AsyncOpenAI(api_key=self.api_key, base_url=self.base_url))
 
     @retry(
         stop=stop_after_attempt(3),
@@ -112,7 +112,7 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
     model: Optional[str] = field(default="text-embedding-3-small")
 
     def __post_init__(self):
-        self.embedding_async_client: AsyncOpenAI = AsyncOpenAI(api_key=self.api_key)
+        self.embedding_async_client: AsyncOpenAI = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url)
         logger.debug("Initialized OpenAIEmbeddingService with OpenAI client.")
 
     @retry(
