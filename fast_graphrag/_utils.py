@@ -38,10 +38,10 @@ def throttle_async_func_call(max_concurrent: int = 2048, stagger_time: float = 0
             while __current_exes >= max_concurrent:
                 await asyncio.sleep(waitting_time)
 
+            # __current_queued += 1
+            # await asyncio.sleep(stagger_time * (__current_queued - 1))
+            # __current_queued -= 1
             __current_exes += 1
-            __current_queued += 1
-            await asyncio.sleep(stagger_time * (__current_queued - 1))
-            __current_queued -= 1
             result = await func(*args, **kwargs)
             __current_exes -= 1
             return result

@@ -25,6 +25,7 @@ from ._base import BaseEmbeddingService, BaseLLMService
 
 TIMEOUT_SECONDS = 180.0
 
+
 @dataclass
 class OpenAILLMService(BaseLLMService):
     """LLM Service for OpenAI LLMs."""
@@ -37,7 +38,7 @@ class OpenAILLMService(BaseLLMService):
             AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS)
         )
 
-    @throttle_async_func_call(max_concurrent=2048, stagger_time=0.001, waitting_time=0.001)
+    @throttle_async_func_call(max_concurrent=256, stagger_time=0.001, waitting_time=0.001)
     async def send_message(
         self,
         prompt: str,
@@ -80,13 +81,10 @@ class OpenAILLMService(BaseLLMService):
             model=model,
             messages=messages,  # type: ignore
             response_model=response_model.Model
-                if response_model and issubclass(response_model, BTResponseModel)
-                else response_model,
+            if response_model and issubclass(response_model, BTResponseModel)
+            else response_model,
             **kwargs,
-            max_retries=AsyncRetrying(
-                stop=stop_after_attempt(3),
-                wait=wait_exponential(multiplier=1, min=4, max=10)
-            ),
+            max_retries=AsyncRetrying(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10)),
         )
 
         if not llm_response:
@@ -116,7 +114,9 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
     model: Optional[str] = field(default="text-embedding-3-small")
 
     def __post_init__(self):
-        self.embedding_async_client: AsyncOpenAI = AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS)
+        self.embedding_async_client: AsyncOpenAI = AsyncOpenAI(
+            base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS
+        )
         logger.debug("Initialized OpenAIEmbeddingService with OpenAI client.")
 
     async def get_embedding(
@@ -152,12 +152,7 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
             current_chunk_length += text_length
         text_chunks.append(current_chunk)
 
-        response = await asyncio.gather(
-            *[
-                self._embedding_request(chunk, model)
-                for chunk in text_chunks
-            ]
-        )
+        response = await asyncio.gather(*[self._embedding_request(chunk, model) for chunk in text_chunks])
 
         data = chain(*[r.data for r in response])
         embeddings = np.array([dp.embedding for dp in data])
