@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 from functools import wraps
-from typing import Any, Callable, List, Tuple, TypeVar, Union
+from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 import numpy.typing as npt
