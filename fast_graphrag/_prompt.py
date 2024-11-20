@@ -132,50 +132,49 @@ Facts:
 Ouput:
 """
 
-PROMPTS["generate_response_query"] = """You are a helpful assistant gathering relevant data from the given tables to provide an helpful answer the user's query.
+PROMPTS["generate_response_query_with_references"] = """You are a helpful assistant analyzing the given input data to provide an helpful response to the user query.
 
-# GOAL
-Your goal is to provide a response to the user's query, summarizing the relevant information in the input data tables.
-If the answer cannot be inferred from the input data tables, just say no relevant information was found. Do not make anything up or add unrelevant information. Be concise.
-
-# INPUT DATA TABLES
+# INPUT DATA
 {context}
 
-# QUERY
+# USER QUERY
 {query}
 
-# OUTPUT
-Follow this steps:
-1. Read and understand the query and the information that would be relevant to answer it.
-2. Carefully analyze the data tables provided and identify all relevant information that may help answer the user's query.
-3. Generate a response to the user's query based on the information you have gathered.
+# INSTRUCTIONS
+Your goal is to provide a response to the user query using the relevant information in the input data:
+- the "Entities" and "Relationships" tables contain high-level information. Use these tables to identify the most important entities and relationships to respond to the query.
+- the "Sources" list contains raw text sources to help answer the query. It may contain noisy data, so pay attention when analyzing it.
+
+Follow these steps:
+1. Read and understand the user query.
+2. Look at the "Entities" and "Relationships" tables to get a general sense of the data and understand which information is the most relevant to answer the query.
+3. Carefully analyze all the "Sources" to get more detailed information. Information could be scattered across several sources, use the identified relevant entities and relationships to guide yourself through the analysis of the sources.
+4. While you write the response, you must include inline references to the all the sources you are using by appending `[<source_id>]` at the end of each sentence, where `source_id` is the corresponding source ID from the "Sources" list.
+5. Write the response to the user query - which must include the inline references - based on the information you have gathered. Be very concise and answer the user query directly. If the response cannot be inferred from the input data, just say no relevant information was found. Do not make anything up or add unrelevant information.
 
 Answer:
 """
 
-## OLD
+PROMPTS["generate_response_query_no_references"] = """You are a helpful assistant analyzing the given input data to provide an helpful response to the user query.
+
+# INPUT DATA
+{context}
+
+# USER QUERY
+{query}
+
+# INSTRUCTIONS
+Your goal is to provide a response to the user query using the relevant information in the input data:
+- the "Entities" and "Relationships" tables contain high-level information. Use these tables to identify the most important entities and relationships to respond to the query.
+- the "Sources" list contains raw text sources to help answer the query. It may contain noisy data, so pay attention when analyzing it.
+
+Follow these steps:
+1. Read and understand the user query.
+2. Look at the "Entities" and "Relationships" tables to get a general sense of the data and understand which information is the most relevant to answer the query.
+3. Carefully analyze all the "Sources" to get more detailed information. Information could be scattered across several sources, use the identified relevant entities and relationships to guide yourself through the analysis of the sources.
+4. Write the response to the user query based on the information you have gathered. Be very concise and answer the user query directly. If the response cannot be inferred from the input data, just say no relevant information was found. Do not make anything up or add unrelevant information.
+
+Answer:
+"""
 
 PROMPTS["fail_response"] = "Sorry, I'm not able to provide an answer to that question."
-
-PROMPTS["default_text_separator"] = [
-	# Paragraph separators
-	"\n\n",
-	"\r\n\r\n",
-	# Line breaks
-	"\n",
-	"\r\n",
-	# Sentence ending punctuation
-	"。",  # Chinese period
-	"．",  # Full-width dot
-	".",  # English period
-	"！",  # Chinese exclamation mark
-	"!",  # English exclamation mark
-	"？",  # Chinese question mark
-	"?",  # English question mark
-	# Whitespace characters
-	" ",  # Space
-	"\t",  # Tab
-	"\u3000",  # Full-width space
-	# Special characters
-	"\u200b",  # Zero-width space (used in some Asian languages)
-]

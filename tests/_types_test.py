@@ -121,16 +121,16 @@ class TestTypes(unittest.TestCase):
         max_chars = {"entities": 128, "relationships": 128, "chunks": 512}
         csv = context.to_str(max_chars.copy())
 
-        csv_entities = re.findall(r"#Entities\n```csv\n(.*?)\n```", csv, re.DOTALL)
-        csv_relationships = re.findall(r"#Relationships\n```csv\n(.*?)\n```", csv, re.DOTALL)
-        csv_chunks = re.findall(r"#Sources\n```csv\n(.*?)\n```", csv, re.DOTALL)
+        csv_entities = re.findall(r"## Entities\n```csv\n(.*?)\n```", csv, re.DOTALL)
+        csv_relationships = re.findall(r"## Relationships\n```csv\n(.*?)\n```", csv, re.DOTALL)
+        csv_chunks = re.findall(r"## Sources\n.*=====", csv, re.DOTALL)
 
         self.assertEqual(len(csv_entities), 1)
         self.assertEqual(len(csv_relationships), 1)
         self.assertEqual(len(csv_chunks), 1)
 
         self.assertGreaterEqual(
-            sum(max_chars.values()), len(csv_entities[0]) + len(csv_relationships[0]) + len(csv_chunks[0])
+            sum(max_chars.values()) + 16, len(csv_entities[0]) + len(csv_relationships[0]) + len(csv_chunks[0])
         )
 
     def test_tqueryresponse(self):
@@ -148,7 +148,7 @@ class TestTypes(unittest.TestCase):
         fields = ["name", "type"]
         values = {"score": [0.9]}
         csv_output = dump_to_csv(data, fields, with_header=True, **values)
-        expected_output = ["name;;type;;score", "Sample name;;SAMPLE TYPE;;0.9"]
+        expected_output = ["name\ttype\tscore", "Sample name\tSAMPLE TYPE\t0.9"]
         self.assertEqual(csv_output, expected_output)
 
 

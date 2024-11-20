@@ -115,7 +115,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
                     "example_queries": self.example_queries,
                     "entity_types": ",".join(self.entity_types),
                 },
-                entity_types=self.entity_types
+                entity_types=self.entity_types,
             )
             if len(subgraphs) == 0:
                 logger.info("No new entities or relationships extracted from the data.")
@@ -181,7 +181,9 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
             llm_response = ""
         else:
             llm_response, _ = await format_and_send_prompt(
-                prompt_key="generate_response_query",
+                prompt_key="generate_response_query_with_references"
+                    if params.with_references
+                    else "generate_response_query_no_references",
                 llm=self.llm_service,
                 format_kwargs={
                     "query": query,

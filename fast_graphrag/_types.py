@@ -87,7 +87,7 @@ GTResponseModel = TypeVar("GTResponseModel", bound=Union[str, BaseModel, BTRespo
 def dump_to_csv(
     data: Iterable[object],
     fields: List[str],
-    separator: str = ";;",
+    separator: str = "\t",
     with_header: bool = False,
     **values: Dict[str, List[Any]],
 ) -> List[str]:
@@ -97,8 +97,8 @@ def dump_to_csv(
             chain(
                 separator.join(
                     chain(
-                        (str(getattr(d, field)) for field in fields),
-                        (str(v) for v in vs),
+                        (str(getattr(d, field)).replace("\t", "    ") for field in fields),
+                        (str(v).replace("\t", "    ") for v in vs),
                     )
                 )
                 for d, *vs in zip(data, *values.values())
@@ -106,6 +106,10 @@ def dump_to_csv(
         )
     )
     return rows
+
+
+def dump_to_reference_list(data: Iterable[object], separator: str = "\n=====\n\n"):
+    return [f"[{i + 1}]  {d}{separator}" for i, d in enumerate(data)]
 
 
 # Embedding types
@@ -133,6 +137,9 @@ class TChunk:
     id: THash = field()
     content: str = field()
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def __str__(self) -> str:
+        return self.content
 
 
 # Graph types
@@ -228,9 +235,7 @@ class TRelation(BTResponseModel, BTEdge):
     class Model(BTResponseModel.Model, metaclass=MetaModel, alias="Relation"):
         source: str = Field(..., description="The name of the source entity")
         target: str = Field(..., description="The name of the target entity")
-        desc: str = Field(
-            ..., description="The description of the relationship between the source and target entity"
-        )
+        desc: str = Field(..., description="The description of the relationship between the source and target entity")
 
         @staticmethod
         def to_dataclass(pydantic: "TRelation.Model") -> "TRelation":
@@ -301,7 +306,7 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
             "relationships": dump_to_csv(
                 [r for r, _ in self.relationships], ["source", "target", "description"], with_header=True
             ),
-            "chunks": dump_to_csv([c for c, _ in self.chunks], ["content"], with_header=True),
+            "chunks": dump_to_reference_list([str(c) for c, _ in self.chunks]),
         }
         csv_tables_row_length = {k: [len(row) for row in table] for k, table in csv_tables.items()}
 
@@ -340,7 +345,7 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
         if len(self.entities):
             data.extend(
                 [
-                    "\n#Entities",
+                    "\n## Entities",
                     "```csv",
                     *csv_tables["entities"][: include_up_to["entities"]],
                     "```",
@@ -352,26 +357,24 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
         if len(self.relationships):
             data.extend(
                 [
-                    "\n#Relationships",
+                    "\n## Relationships",
                     "```csv",
                     *csv_tables["relationships"][: include_up_to["relationships"]],
                     "```",
                 ]
             )
         else:
-            data.append("\n\n#Relationships: None\n")
+            data.append("\n## Relationships: None\n")
 
         if len(self.chunks):
             data.extend(
                 [
-                    "\n\n#Sources",
-                    "```csv",
+                    "\n## Sources\n",
                     *csv_tables["chunks"][: include_up_to["chunks"]],
-                    "```",
                 ]
             )
         else:
-            data.append("\n\n#Sources: None\n")
+            data.append("\n## Sources: None\n")
         return "\n".join(data)
 
 
