@@ -26,7 +26,7 @@ def timeit(func: Callable[..., Any]):
     return wrapper
 
 
-def throttle_async_func_call(max_concurrent: int = 2048, stagger_time: float = 0.002, waitting_time: float = 0.001):
+def throttle_async_func_call(max_concurrent: int = 2048, stagger_time: Optional[float] = None, waitting_time: float = 0.001):
     _wrappedFn = TypeVar("_wrappedFn", bound=Callable[..., Any])
     def decorator(func: _wrappedFn) -> _wrappedFn:
         __current_exes = 0
