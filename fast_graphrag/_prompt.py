@@ -23,8 +23,8 @@ Examples of possible questions:
 3. Double check that each entity identified in step 1 appears in at least one relationship. If not, add the missing relationships.
 
 # EXAMPLE DATA
-Types: [location, organization, person, communication]
-Document: Radio City: Radio City is India's first private FM radio station and was started on 3 July 2001. It plays Hindi, English and regional songs. Radio City recently forayed into New Media in May 2008 with the launch of a music portal - PlanetRadiocity.com that offers music related news, videos, songs, and other music-related features."
+Example types: [location, organization, person, communication]
+Example document: Radio City: Radio City is India's first private FM radio station and was started on 3 July 2001. It plays Hindi, English and regional songs. Radio City recently forayed into New Media in May 2008 with the launch of a music portal - PlanetRadiocity.com that offers music related news, videos, songs, and other music-related features."
 
 Output:
 {{
