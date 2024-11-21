@@ -69,7 +69,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         content: Union[str, List[str]],
         metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
         params: Optional[InsertParam] = None,
-        show_progress: bool = True,
+        show_progress: bool = True
     ) -> Tuple[int, int, int]:
         return get_event_loop().run_until_complete(self.async_insert(content, metadata, params, show_progress))
 
@@ -78,7 +78,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         content: Union[str, List[str]],
         metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
         params: Optional[InsertParam] = None,
-        show_progress: bool = True,
+        show_progress: bool = True
     ) -> Tuple[int, int, int]:
         """Insert a new memory or memories into the graph.
 
@@ -186,7 +186,9 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
             llm_response = ""
         else:
             llm_response, _ = await format_and_send_prompt(
-                prompt_key="generate_response_query",
+                prompt_key="generate_response_query_with_references"
+                if params.with_references
+                else "generate_response_query_no_references",
                 llm=self.llm_service,
                 format_kwargs={
                     "query": query,
