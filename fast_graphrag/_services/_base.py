@@ -122,6 +122,7 @@ class BaseStateManagerService(Generic[GTNode, GTEdge, GTHash, GTChunk, GTId, GTE
         llm: BaseLLMService,
         subgraphs: List[asyncio.Future[Optional[BaseGraphStorage[GTNode, GTEdge, GTId]]]],
         documents: Iterable[Iterable[GTChunk]],
+        show_progress: bool = True
     ) -> None:
         """Clean and upsert entities, relationships, and chunks into the storage."""
         raise NotImplementedError

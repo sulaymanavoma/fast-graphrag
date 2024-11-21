@@ -69,14 +69,16 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         content: Union[str, List[str]],
         metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
         params: Optional[InsertParam] = None,
+        show_progress: bool = True,
     ) -> Tuple[int, int, int]:
-        return get_event_loop().run_until_complete(self.async_insert(content, metadata, params))
+        return get_event_loop().run_until_complete(self.async_insert(content, metadata, params, show_progress))
 
     async def async_insert(
         self,
         content: Union[str, List[str]],
         metadata: Union[List[Optional[Dict[str, Any]]], Optional[Dict[str, Any]]] = None,
         params: Optional[InsertParam] = None,
+        show_progress: bool = True,
     ) -> Tuple[int, int, int]:
         """Insert a new memory or memories into the graph.
 
@@ -84,6 +86,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
             content (str | list[str]): The data to be inserted. Can be a single string or a list of strings.
             metadata (dict, optional): Additional metadata associated with the data. Defaults to None.
             params (InsertParam, optional): Additional parameters for the insertion. Defaults to None.
+            show_progress (bool, optional): Whether to show the progress bar. Defaults to True.
         """
         if params is None:
             params = InsertParam()
@@ -115,13 +118,15 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
                     "example_queries": self.example_queries,
                     "entity_types": ",".join(self.entity_types),
                 },
-                entity_types=self.entity_types
+                entity_types=self.entity_types,
             )
             if len(subgraphs) == 0:
                 logger.info("No new entities or relationships extracted from the data.")
 
             # Update the graph with the new entities, relationships, and chunks
-            await self.state_manager.upsert(llm=self.llm_service, subgraphs=subgraphs, documents=new_chunks_per_data)
+            await self.state_manager.upsert(
+                llm=self.llm_service, subgraphs=subgraphs, documents=new_chunks_per_data, show_progress=show_progress
+            )
 
             # Return the total number of entities, relationships, and chunks
             return (
