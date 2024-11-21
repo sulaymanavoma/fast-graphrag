@@ -102,8 +102,10 @@ print(grag.query("Who is Scrooge?").response)
 The next time you initialize fast-graphrag from the same working directory, it will retain all the knowledge automatically.
 
 ## Examples
-Please refer to the `examples` folder for a list of tutorial on common use cases of the library:
-- `custom_llm.py`: a brief example on how to configure fast-graphrag to run with different OpenAI API compatible language models and embedders.
+Please refer to the `examples` folder for a list of tutorials on common use cases of the library:
+- `custom_llm.py`: a brief example on how to configure fast-graphrag to run with different OpenAI API compatible language models and embedders;
+- `checkpointing.ipynb`: a tutorial on how to use checkpoints to avoid irreversible data corruption;
+- `query_parameters.ipynb`: a tutorial on how to use the different query parameters. In particular, it shows how to include references to the used information in the provided answer (using the `with_references=True` parameter). 
 
 ## Contributing
 
@@ -114,6 +116,8 @@ Not sure where to get started? You can join our [Discord](https://discord.gg/DvY
 ## Philosophy
 
 Our mission is to increase the number of successful GenAI applications in the world. To do that, we build memory and data tools that enable LLM apps to leverage highly specialized retrieval pipelines without the complexity of setting up and maintaining agentic workflows.
+
+Fast GraphRAG currently exploit the personalized pagerank algorithm to explore the graph and find the most relevant pieces of information to answer your query. For an overview on why this works, you can check out the HippoRAG paper [here](https://arxiv.org/abs/2405.14831).
 
 ## Open-source or Managed Service
 
