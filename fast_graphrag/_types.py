@@ -1,6 +1,8 @@
+import re
+from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, TypeAlias, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Tuple, TypeAlias, TypeVar, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -46,7 +48,14 @@ class BTEdge:
 
 
 GTEdge = TypeVar("GTEdge", bound=BTEdge)
-GTChunk = TypeVar("GTChunk")
+
+
+@dataclass
+class BTChunk:
+    id: Any
+
+
+GTChunk = TypeVar("GTChunk", bound=BTChunk)
 
 
 # LLM
@@ -131,7 +140,7 @@ class TDocument:
 
 
 @dataclass
-class TChunk:
+class TChunk(BTChunk):
     """A class for representing a chunk."""
 
     id: THash = field()
@@ -384,3 +393,90 @@ class TQueryResponse(Generic[GTNode, GTEdge, GTHash, GTChunk]):
 
     response: str
     context: TContext[GTNode, GTEdge, GTHash, GTChunk]
+
+    @dataclass
+    class Chunk:
+        content: str = field()
+        index: Optional[int] = field(init=False, default=None)
+
+    @dataclass
+    class Document:
+        metadata: Dict[str, Any] = field(init=False, default_factory=dict)
+        chunks: Dict[int, "TQueryResponse.Chunk"] = field(init=False, default_factory=dict)
+        index: Optional[int] = field(init=False, default=None)
+        _last_chunk_index: int = field(init=False, default=0)
+
+        def get_chunk(self, id: int) -> Tuple[int, "TQueryResponse.Chunk"]:
+            chunk = self.chunks[id]
+            if chunk.index is None:
+                self._last_chunk_index += 1
+                chunk.index = self._last_chunk_index
+            return chunk.index, chunk
+
+        def to_dict(self) -> Dict[str, Any]:
+            return {
+                "meta": self.metadata,
+                "chunks": {chunk.index: chunk.content for chunk in self.chunks.values() if chunk.index is not None}
+            }
+
+    @dataclass
+    class Context:
+        documents: Dict[int, "TQueryResponse.Document"] = field(
+            default_factory=lambda: defaultdict(lambda: TQueryResponse.Document())
+        )
+        _last_document_index: int = field(init=False, default=0)
+
+        def get_doc(self, id: int) -> Tuple[int, "TQueryResponse.Document"]:
+            doc = self.documents[id]
+            if doc.index is None:
+                self._last_document_index += 1
+                doc.index = self._last_document_index
+            return doc.index, doc
+
+        def to_dict(self):
+            return {doc.index: doc.to_dict() for doc in self.documents.values() if doc.index is not None}
+
+    def format_references(self, format_fn: Callable[[int, List[int], Any], str] = lambda i, _, __: f"[{i}]"):
+        # Create list of documents
+        context = self.Context()
+        ref2data: Dict[str, Tuple[int, int]] = {}
+
+        for i, (chunk, _) in enumerate(self.context.chunks):
+            metadata: Dict[str, Any] = getattr(chunk, "metadata", {})
+            chunk_id = int(chunk.id)
+            if metadata == {}:
+                doc_id = chunk_id
+            else:
+                doc_id = hash(frozenset(metadata.items()))
+            context.documents[doc_id].metadata = metadata
+            context.documents[doc_id].chunks[chunk_id] = TQueryResponse.Chunk(str(chunk))
+            ref2data[str(i + 1)] = (doc_id, chunk_id)
+
+        def _replace_fn(match: str | re.Match[str]) -> str:
+            text = match if isinstance(match, str) else match.group()
+            references = re.findall(r"(\d+)", text)
+            seen_docs: Dict[int, List[int]] = defaultdict(list)
+
+            for reference in references:
+                d = ref2data.get(reference, None)
+                if d is None:
+                    continue
+                seen_docs[d[0]].append(d[1])
+
+            r = ""
+            for reference in references:
+                d = ref2data.get(reference, None)
+                if d is None:
+                    continue
+
+                doc_id = d[0]
+                chunk_ids = seen_docs.get(doc_id, None)
+                if chunk_ids is None:
+                    continue
+                seen_docs.pop(doc_id)
+
+                doc_index, doc = context.get_doc(doc_id)
+                r += format_fn(doc_index, [doc.get_chunk(id)[0] for id in chunk_ids], doc.metadata)
+            return r
+
+        return re.sub(r"\[\d[\s\d\]\[]*\]", _replace_fn, self.response), context.to_dict()

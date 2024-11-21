@@ -29,8 +29,8 @@ DEFAULT_SEPARATORS = [
 @dataclass
 class DefaultChunkingServiceConfig:
     separators: List[str] = field(default_factory=lambda: DEFAULT_SEPARATORS)
-    chunk_token_size: int = field(default=1024)
-    chunk_token_overlap: int = field(default=128)
+    chunk_token_size: int = field(default=800)
+    chunk_token_overlap: int = field(default=100)
 
 
 @dataclass
