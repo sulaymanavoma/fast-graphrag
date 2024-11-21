@@ -396,6 +396,7 @@ class TQueryResponse(Generic[GTNode, GTEdge, GTHash, GTChunk]):
 
     @dataclass
     class Chunk:
+        id: int = field()
         content: str = field()
         index: Optional[int] = field(init=False, default=None)
 
@@ -416,7 +417,9 @@ class TQueryResponse(Generic[GTNode, GTEdge, GTHash, GTChunk]):
         def to_dict(self) -> Dict[str, Any]:
             return {
                 "meta": self.metadata,
-                "chunks": {chunk.index: chunk.content for chunk in self.chunks.values() if chunk.index is not None}
+                "chunks": {
+                    chunk.index: (chunk.content, chunk.id) for chunk in self.chunks.values() if chunk.index is not None
+                },
             }
 
     @dataclass
@@ -449,7 +452,7 @@ class TQueryResponse(Generic[GTNode, GTEdge, GTHash, GTChunk]):
             else:
                 doc_id = hash(frozenset(metadata.items()))
             context.documents[doc_id].metadata = metadata
-            context.documents[doc_id].chunks[chunk_id] = TQueryResponse.Chunk(str(chunk))
+            context.documents[doc_id].chunks[chunk_id] = TQueryResponse.Chunk(chunk_id, str(chunk))
             ref2data[str(i + 1)] = (doc_id, chunk_id)
 
         def _replace_fn(match: str | re.Match[str]) -> str:
