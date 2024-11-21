@@ -77,7 +77,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         llm: BaseLLMService,
         subgraphs: List[asyncio.Future[Optional[BaseGraphStorage[TEntity, TRelation, TId]]]],
         documents: Iterable[Iterable[TChunk]],
-        show_progress: bool = True,
+        show_progress: bool = True
     ) -> None:
         nodes: Iterable[List[TEntity]]
         edges: Iterable[List[TRelation]]
