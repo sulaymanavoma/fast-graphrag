@@ -19,10 +19,10 @@ grag = GraphRAG(
     example_queries="\n".join(QUERIES),
     entity_types=ENTITY_TYPES,
     config=GraphRAG.Config(
-        llm_service=OpenAILLMService(model="your-llm-model", base_url="api.url.com", api_key="your-api-key"),
+        llm_service=OpenAILLMService(model="your-llm-model", base_url="llm.api.url.com", api_key="your-api-key"),
         embedding_service=OpenAIEmbeddingService(
             model="your-embedding-model",
-            base_url="api.url.com",
+            base_url="emb.api.url.com",
             api_key="your-api-key",
             embedding_dim=512,  # the output embedding dim of the chosen model
         ),
