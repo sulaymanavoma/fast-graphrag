@@ -118,7 +118,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         # STEP (2): Computing entity embeddings
         progress_bar.set_description("Building... [computing embeddings]")
         # Insert entities in entity_storage
-        embeddings = await self.embedding_service.get_embedding(texts=[d.to_str() for _, d in upserted_nodes])
+        embeddings = await self.embedding_service.encode(texts=[d.to_str() for _, d in upserted_nodes])
         progress_bar.update(1)
         await self.entity_storage.upsert(ids=(i for i, _ in upserted_nodes), embeddings=embeddings)
         progress_bar.update(1)
@@ -184,7 +184,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
             if len(entity_names) == 0:
                 return None
 
-            query_embeddings = await self.embedding_service.get_embedding(entity_names + [query])
+            query_embeddings = await self.embedding_service.encode(entity_names + [query])
             # query_embeddings = await self.embedding_service.get_embedding([query])
 
             # Similarity-search over entities

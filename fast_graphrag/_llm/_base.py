@@ -85,7 +85,7 @@ class BaseEmbeddingService:
 
     embedding_async_client: Any = field(init=False, default=None)
 
-    async def get_embedding(
+    async def encode(
         self, texts: list[str], model: Optional[str] = None
     ) -> np.ndarray[Any, np.dtype[np.float32]]:
         """Get the embedding representation of the input text.

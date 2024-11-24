@@ -119,7 +119,7 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
         )
         logger.debug("Initialized OpenAIEmbeddingService with OpenAI client.")
 
-    async def get_embedding(
+    async def encode(
         self, texts: list[str], model: Optional[str] = None
     ) -> np.ndarray[Any, np.dtype[np.float32]]:
         """Get the embedding representation of the input text.

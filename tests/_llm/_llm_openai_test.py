@@ -103,7 +103,7 @@ class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
         mock_response.data = [AsyncMock(embedding=[0.1, 0.2, 0.3])]
         service.embedding_async_client.embeddings.create = AsyncMock(return_value=mock_response)
 
-        embeddings = await service.get_embedding(texts=["test"], model="text-embedding-3-small")
+        embeddings = await service.encode(texts=["test"], model="text-embedding-3-small")
 
         self.assertEqual(embeddings.shape, (1, 3))
         self.assertEqual(embeddings[0][0], 0.1)
@@ -114,7 +114,7 @@ class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
         mock_response.data = [AsyncMock(embedding=[0.1, 0.2, 0.3])]
         service.embedding_async_client.embeddings.create = AsyncMock(side_effect=(RateLimitError429, mock_response))
 
-        embeddings = await service.get_embedding(texts=["test"], model="text-embedding-3-small")
+        embeddings = await service.encode(texts=["test"], model="text-embedding-3-small")
 
         self.assertEqual(embeddings.shape, (1, 3))
         self.assertEqual(embeddings[0][0], 0.1)
@@ -126,7 +126,7 @@ class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
         service.embedding_async_client.embeddings.create = AsyncMock(
             side_effect=(APIConnectionError(request=MagicMock()), mock_response)
         )
-        embeddings = await service.get_embedding(texts=["test"], model="text-embedding-3-small")
+        embeddings = await service.encode(texts=["test"], model="text-embedding-3-small")
 
         self.assertEqual(embeddings.shape, (1, 3))
         self.assertEqual(embeddings[0][0], 0.1)
@@ -138,7 +138,7 @@ class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
         )
 
         with self.assertRaises(RetryError):
-            await service.get_embedding(texts=["test"], model="text-embedding-3-small")
+            await service.encode(texts=["test"], model="text-embedding-3-small")
 
     async def test_get_embedding_with_different_model(self):
         service = OpenAIEmbeddingService(api_key="test")
@@ -146,7 +146,7 @@ class TestOpenAIEmbeddingService(unittest.IsolatedAsyncioTestCase):
         mock_response.data = [AsyncMock(embedding=[0.4, 0.5, 0.6])]
         service.embedding_async_client.embeddings.create = AsyncMock(return_value=mock_response)
 
-        embeddings = await service.get_embedding(texts=["test"], model="text-embedding-3-large")
+        embeddings = await service.encode(texts=["test"], model="text-embedding-3-large")
 
         self.assertEqual(embeddings.shape, (1, 3))
         self.assertEqual(embeddings[0][0], 0.4)
