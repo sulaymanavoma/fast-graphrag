@@ -101,8 +101,8 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         else:
             data = (TDocument(data=c, metadata=m or {}) for c, m in zip(content, metadata))
 
-        await self.state_manager.insert_start()
         try:
+            await self.state_manager.insert_start()
             # Chunk the data
             chunked_documents = await self.chunking_service.extract(data=data)
 
@@ -128,6 +128,9 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
                 llm=self.llm_service, subgraphs=subgraphs, documents=new_chunks_per_data, show_progress=show_progress
             )
 
+            # Commit the changes if all is successful
+            await self.state_manager.insert_done()
+
             # Return the total number of entities, relationships, and chunks
             return (
                 await self.state_manager.get_num_entities(),
@@ -137,8 +140,6 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         except Exception as e:
             logger.error(f"Error during insertion: {e}")
             raise e
-        finally:
-            await self.state_manager.insert_done()
 
     def query(self, query: str, params: Optional[QueryParam] = None) -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
         async def _query() -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
