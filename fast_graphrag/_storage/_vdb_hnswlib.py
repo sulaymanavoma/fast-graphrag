@@ -18,7 +18,6 @@ from ._base import BaseVectorStorage
 class HNSWVectorStorageConfig:
     ef_construction: int = field(default=64)
     M: int = field(default=48)
-    max_elements: int = field(default=1000000)
     ef_search: int = field(default=64)
     num_threads: int = field(default=-1)
 
@@ -27,10 +26,18 @@ class HNSWVectorStorageConfig:
 class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
     RESOURCE_NAME = "hnsw_index_{}.bin"
     RESOURCE_METADATA_NAME = "hnsw_metadata.pkl"
+    INITIAL_MAX_ELEMENTS = 256000
     config: HNSWVectorStorageConfig = field()  # type: ignore
     _index: Any = field(init=False, default=None)  # type: ignore
     _metadata: Dict[GTId, Dict[str, Any]] = field(default_factory=dict)
-    _current_elements: int = field(init=False, default=0)
+
+    @property
+    def size(self) -> int:
+        return self._index.get_current_count()
+
+    @property
+    def max_size(self) -> int:
+        return self._index.get_max_elements()
 
     async def upsert(
         self,
@@ -46,25 +53,23 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
             metadata is None or (len(metadata) == len(ids))
         ), "ids, embeddings, and metadata (if provided) must have the same length"
 
-        # TODO: this should expand the index
-        if self._current_elements + len(embeddings) > self.config.max_elements:
-            logger.error(f"HNSW index is full. Cannot insert {len(embeddings)} elements.")
-            raise NotImplementedError(f"Cannot insert {len(embeddings)} elements. Full index.")
+        if self.size + len(embeddings) >= self.max_size:
+            self._index.resize_index(self.max_size * 2)
+            logger.info("Resizing HNSW index.")
 
         if metadata:
             self._metadata.update(dict(zip(ids, metadata)))
         self._index.add_items(data=embeddings, ids=ids, num_threads=self.config.num_threads)
-        self._current_elements = self._index.get_current_count()
 
     async def get_knn(
         self, embeddings: Iterable[GTEmbedding], top_k: int
     ) -> Tuple[Iterable[Iterable[GTId]], npt.NDArray[TScore]]:
-        if self._current_elements == 0:
+        if self.size == 0:
             empty_list: List[List[GTId]] = []
             logger.info("Querying knns in empty index.")
             return empty_list, np.array([], dtype=TScore)
 
-        top_k = min(top_k, self._current_elements)
+        top_k = min(top_k, self.size)
 
         if top_k > self.config.ef_search:
             self._index.set_ef(top_k)
@@ -81,11 +86,11 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         if not isinstance(embeddings, np.ndarray):
             embeddings = np.array(list(embeddings), dtype=np.float32)
 
-        if embeddings.size == 0 or self._current_elements == 0:
-            logger.warning(f"No provided embeddings ({embeddings.size}) or empty index ({self._current_elements}).")
-            return csr_matrix((0, self._current_elements))
+        if embeddings.size == 0 or self.size == 0:
+            logger.warning(f"No provided embeddings ({embeddings.size}) or empty index ({self.size}).")
+            return csr_matrix((0, self.size))
 
-        top_k = min(top_k, self._current_elements)
+        top_k = min(top_k, self.size)
         if top_k > self.config.ef_search:
             self._index.set_ef(top_k)
 
@@ -100,7 +105,7 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
         scores = csr_matrix(
             (flattened_scores, (np.repeat(np.arange(len(ids)), top_k), flattened_ids)),
-            shape=(len(ids), self._current_elements),
+            shape=(len(ids), self.size),
         )
 
         scores.data = (2.0 - scores.data) * 0.5
@@ -116,11 +121,11 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
             if index_file_name and metadata_file_name:
                 try:
-                    self._index.load_index(index_file_name, max_elements=self.config.max_elements)
+                    self._index.load_index(index_file_name, allow_replace_deleted = True)
                     with open(metadata_file_name, "rb") as f:
-                        self._metadata, self._current_elements = pickle.load(f)
+                        self._metadata = pickle.load(f)
                         logger.debug(
-                            f"Loaded {self._current_elements} elements from vectordb storage '{index_file_name}'."
+                            f"Loaded {self.size} elements from vectordb storage '{index_file_name}'."
                         )
                     return  # All good
                 except Exception as e:
@@ -132,13 +137,13 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         else:
             logger.debug("Creating new volatile vectordb storage.")
         self._index.init_index(
-            max_elements=self.config.max_elements,
+            max_elements=self.INITIAL_MAX_ELEMENTS,
             ef_construction=self.config.ef_construction,
             M=self.config.M,
+            allow_replace_deleted = True
         )
         self._index.set_ef(self.config.ef_search)
         self._metadata = {}
-        self._current_elements = 0
 
     async def _insert_done(self):
         if self.namespace:
@@ -148,8 +153,8 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
             try:
                 self._index.save_index(index_file_name)
                 with open(metadata_file_name, "wb") as f:
-                    pickle.dump((self._metadata, self._current_elements), f)
-                logger.debug(f"Saving {self._current_elements} elements from vectordb storage '{index_file_name}'.")
+                    pickle.dump(self._metadata, f)
+                logger.debug(f"Saving {self.size} elements from vectordb storage '{index_file_name}'.")
             except Exception as e:
                 t = f"Error saving vectordb storage from {index_file_name}: {e}"
                 logger.error(t)
@@ -163,10 +168,10 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         metadata_file_name = self.namespace.get_load_path(self.RESOURCE_METADATA_NAME)
         if index_file_name and metadata_file_name:
             try:
-                self._index.load_index(index_file_name, max_elements=self.config.max_elements)
+                self._index.load_index(index_file_name, allow_replace_deleted = True)
                 with open(metadata_file_name, "rb") as f:
-                    self._metadata, self._current_elements = pickle.load(f)
-                logger.debug(f"Loaded {self._current_elements} elements from vectordb storage '{index_file_name}'.")
+                    self._metadata = pickle.load(f)
+                logger.debug(f"Loaded {self.size} elements from vectordb storage '{index_file_name}'.")
             except Exception as e:
                 t = f"Error loading vectordb storage from {index_file_name}: {e}"
                 logger.error(t)
@@ -174,7 +179,6 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         else:
             logger.warning(f"No data file found for vectordb storage '{index_file_name}'. Loading empty vectordb.")
             self._metadata = {}
-            self._current_elements = 0
 
     async def _query_done(self):
         pass
