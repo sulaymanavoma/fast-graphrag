@@ -187,7 +187,7 @@ class TEntity(BTResponseModel, BTNode):
 class TQueryEntities(BaseModel):
     entities: List[str] = Field(
         ...,
-        description=("The list of entities extracted from the query in the format 'name [type]'"),
+        description=("The list of entities extracted from the query."),
     )
     n: int = Field(..., description="The number of named entities found")  # So that the LLM can answer 0.
 
