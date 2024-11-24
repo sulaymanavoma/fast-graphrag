@@ -26,7 +26,7 @@ class HNSWVectorStorageConfig:
 class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
     RESOURCE_NAME = "hnsw_index_{}.bin"
     RESOURCE_METADATA_NAME = "hnsw_metadata.pkl"
-    INITIAL_MAX_ELEMENTS = 256000
+    INITIAL_MAX_ELEMENTS = 128000
     config: HNSWVectorStorageConfig = field()  # type: ignore
     _index: Any = field(init=False, default=None)  # type: ignore
     _metadata: Dict[GTId, Dict[str, Any]] = field(default_factory=dict)
@@ -54,7 +54,10 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         ), "ids, embeddings, and metadata (if provided) must have the same length"
 
         if self.size + len(embeddings) >= self.max_size:
-            self._index.resize_index(self.max_size * 2)
+            new_size = self.max_size * 2
+            while self.size + len(embeddings) >= new_size:
+                new_size *= 2
+            self._index.resize_index(new_size)
             logger.info("Resizing HNSW index.")
 
         if metadata:
