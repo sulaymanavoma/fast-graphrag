@@ -196,8 +196,7 @@ class BaseVectorStorage(BaseStorage, Generic[GTId, GTEmbedding]):
 
 @dataclass
 class BaseGraphStorage(BaseStorage, Generic[GTNode, GTEdge, GTId]):
-    @staticmethod
-    def from_tgraph(graph: Any, namespace: Optional[Namespace] = None) -> "BaseGraphStorage[GTNode, GTEdge, GTId]":
+    async def save_graphml(self, path: str) -> None:
         raise NotImplementedError
 
     async def node_count(self) -> int:

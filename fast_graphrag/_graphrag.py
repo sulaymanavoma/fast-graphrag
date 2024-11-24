@@ -143,8 +143,8 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
 
     def query(self, query: str, params: Optional[QueryParam] = None) -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
         async def _query() -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
+            await self.state_manager.query_start()
             try:
-                await self.state_manager.query_start()
                 answer = await self.async_query(query, params)
                 return answer
             except Exception as e:
@@ -205,3 +205,13 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
             )
 
         return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](response=llm_response, context=relevant_state)
+
+    def save_graphml(self, output_path: str) -> None:
+        """Save the graph in GraphML format."""
+        async def _save_graphml() -> None:
+            await self.state_manager.query_start()
+            try:
+                await self.state_manager.save_graphml(output_path)
+            finally:
+                await self.state_manager.query_done()
+        get_event_loop().run_until_complete(_save_graphml())

@@ -385,3 +385,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
         for storage_inst in storages:
             storage_inst.set_in_progress(False)
+
+    async def save_graphml(self, output_path: str) -> None:
+        await self.graph_storage.save_graphml(output_path)
+        logger.info(f"Graph saved to '{output_path}'.")

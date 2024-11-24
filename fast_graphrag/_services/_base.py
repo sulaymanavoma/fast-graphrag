@@ -144,3 +144,7 @@ class BaseStateManagerService(Generic[GTNode, GTEdge, GTHash, GTChunk, GTId, GTE
     async def get_num_chunks(self) -> int:
         """Get the number of chunks in the storage."""
         raise NotImplementedError
+
+    async def save_graphml(self, output_path: str) -> None:
+        """Save the graph in GraphML format."""
+        raise NotImplementedError

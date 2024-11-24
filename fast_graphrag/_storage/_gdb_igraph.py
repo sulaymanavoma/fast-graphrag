@@ -1,3 +1,5 @@
+import gzip
+import os
 from dataclasses import asdict, dataclass, field
 from typing import Any, Generic, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
@@ -24,6 +26,16 @@ class IGraphStorage(BaseGraphStorage[GTNode, GTEdge, GTId]):
     RESOURCE_NAME = "igraph_data.pklz"
     config: IGraphStorageConfig[GTNode, GTEdge] = field()
     _graph: Optional[ig.Graph] = field(init=False, default=None)  # type: ignore
+
+    async def save_graphml(self, path: str) -> None:
+        if self._graph is not None:  # type: ignore
+            ig.Graph.write_graphmlz(self._graph, path + ".gz")  # type: ignore
+
+            with gzip.open(path + ".gz", 'rb') as f:
+                file_content = f.read()
+            with open(path, 'wb') as f:
+                f.write(file_content)
+            os.remove(path + ".gz")
 
     async def node_count(self) -> int:
         return self._graph.vcount()  # type: ignore
