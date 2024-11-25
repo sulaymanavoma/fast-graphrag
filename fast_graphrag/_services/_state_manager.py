@@ -179,8 +179,9 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
     async def get_context(
         self, query: str, entities: Iterable[TEntity]
     ) -> Optional[TContext[TEntity, TRelation, THash, TChunk]]:
-        # if self.entity_storage.size == 0:
-        #     return None
+        if self.entity_storage.size == 0:
+            return None
+
         try:
             entity_names = [entity.name for entity in entities]
             if len(entity_names) == 0:
