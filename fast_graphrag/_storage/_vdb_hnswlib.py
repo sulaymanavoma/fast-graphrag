@@ -124,7 +124,7 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
             if index_file_name and metadata_file_name:
                 try:
-                    self._index.load_index(index_file_name, allow_replace_deleted = True)
+                    self._index.load_index(index_file_name, allow_replace_deleted=True)
                     with open(metadata_file_name, "rb") as f:
                         self._metadata = pickle.load(f)
                         logger.debug(
@@ -143,7 +143,7 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
             max_elements=self.INITIAL_MAX_ELEMENTS,
             ef_construction=self.config.ef_construction,
             M=self.config.M,
-            allow_replace_deleted = True
+            allow_replace_deleted=True
         )
         self._index.set_ef(self.config.ef_search)
         self._metadata = {}
@@ -171,17 +171,26 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         metadata_file_name = self.namespace.get_load_path(self.RESOURCE_METADATA_NAME)
         if index_file_name and metadata_file_name:
             try:
-                self._index.load_index(index_file_name, allow_replace_deleted = True)
+                self._index.load_index(index_file_name, allow_replace_deleted=True)
                 with open(metadata_file_name, "rb") as f:
                     self._metadata = pickle.load(f)
                 logger.debug(f"Loaded {self.size} elements from vectordb storage '{index_file_name}'.")
+
+                return # All good
             except Exception as e:
                 t = f"Error loading vectordb storage from {index_file_name}: {e}"
                 logger.error(t)
                 raise InvalidStorageError(t) from e
         else:
             logger.warning(f"No data file found for vectordb storage '{index_file_name}'. Loading empty vectordb.")
-            self._metadata = {}
+        self._index.init_index(
+            max_elements=self.INITIAL_MAX_ELEMENTS,
+            ef_construction=self.config.ef_construction,
+            M=self.config.M,
+            allow_replace_deleted=True
+        )
+        self._index.set_ef(self.config.ef_search)
+        self._metadata = {}
 
     async def _query_done(self):
         pass

@@ -166,6 +166,10 @@ class BaseIndexedKeyValueStorage(BaseStorage, Generic[GTKey, GTValue]):
 class BaseVectorStorage(BaseStorage, Generic[GTId, GTEmbedding]):
     embedding_dim: int = field(default=0)
 
+    @property
+    def size(self) -> int:
+        raise NotImplementedError
+
     async def get_knn(
         self, embeddings: Iterable[GTEmbedding], top_k: int
     ) -> Tuple[Iterable[Iterable[GTId]], Iterable[Iterable[TScore]]]:

@@ -132,6 +132,7 @@ class PickleIndexedKeyValueStorage(BaseIndexedKeyValueStorage[GTKey, GTValue]):
             self._data = {}
             self._free_indices = []
             self._key_to_index = {}
+        self._np_keys = None
 
     async def _query_done(self):
         pass

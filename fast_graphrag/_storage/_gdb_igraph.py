@@ -151,7 +151,6 @@ class IGraphStorage(BaseGraphStorage[GTNode, GTEdge, GTId]):
                 ((edge.source, edge.target) for edge in edges),
                 attributes=type(edges[0]).to_attrs(edges=edges),
             )
-
             # TODO: not sure if this is the best way to get the indices of the new edges
             return list(range(self._graph.ecount() - len(edges), self._graph.ecount()))  # type: ignore
         else:
