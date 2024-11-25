@@ -10,12 +10,16 @@ class RankingPolicy_WithThreshold(BaseRankingPolicy):  # noqa: N801
     @dataclass
     class Config:
         threshold: float = field(default=0.05)
+        max_entities: int = field(default=128)
 
     config: Config = field()
 
     def __call__(self, scores: csr_matrix) -> csr_matrix:
         # Remove scores below threshold
         scores.data[scores.data < self.config.threshold] = 0
+        if scores.nnz >= self.config.max_entities:
+            smallest_indices = np.argpartition(scores.data, -self.config.max_entities)[:-self.config.max_entities]
+            scores.data[smallest_indices] = 0
         scores.eliminate_zeros()
 
         return scores
