@@ -13,6 +13,7 @@ from fast_graphrag._types import TIndex
 logger = logging.getLogger("graphrag")
 TOKEN_TO_CHAR_RATIO = 4
 
+
 def timeit(func: Callable[..., Any]):
     @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -26,8 +27,11 @@ def timeit(func: Callable[..., Any]):
     return wrapper
 
 
-def throttle_async_func_call(max_concurrent: int = 2048, stagger_time: Optional[float] = None, waitting_time: float = 0.001):
+def throttle_async_func_call(
+    max_concurrent: int = 2048, stagger_time: Optional[float] = None, waiting_time: float = 0.001
+):
     _wrappedFn = TypeVar("_wrappedFn", bound=Callable[..., Any])
+
     def decorator(func: _wrappedFn) -> _wrappedFn:
         __current_exes = 0
         __current_queued = 0
@@ -36,7 +40,7 @@ def throttle_async_func_call(max_concurrent: int = 2048, stagger_time: Optional[
         async def wait_func(*args: Any, **kwargs: Any) -> Any:
             nonlocal __current_exes, __current_queued
             while __current_exes >= max_concurrent:
-                await asyncio.sleep(waitting_time)
+                await asyncio.sleep(waiting_time)
 
             # __current_queued += 1
             # await asyncio.sleep(stagger_time * (__current_queued - 1))
@@ -49,6 +53,7 @@ def throttle_async_func_call(max_concurrent: int = 2048, stagger_time: Optional[
         return wait_func  # type: ignore
 
     return decorator
+
 
 def get_event_loop() -> asyncio.AbstractEventLoop:
     try:
@@ -87,9 +92,7 @@ def extract_sorted_scores(row_vector: csr_matrix) -> Tuple[npt.NDArray[np.int64]
     return sorted_indices_array, sorted_probabilities_array
 
 
-def csr_from_indices_list(
-    data: List[List[Union[int, TIndex]]], shape: Tuple[int, int]
-) -> csr_matrix:
+def csr_from_indices_list(data: List[List[Union[int, TIndex]]], shape: Tuple[int, int]) -> csr_matrix:
     """Create a CSR matrix from a list of lists."""
     num_rows = len(data)
 
