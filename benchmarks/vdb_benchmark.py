@@ -264,7 +264,7 @@ if __name__ == "__main__":
 
         get_event_loop().run_until_complete(_run_create())
 
-    elif args.benchmark:
+    if args.benchmark:
         queries = get_queries(dataset)
 
         async def _query_task(query: Query) -> Tuple[Query, str]:

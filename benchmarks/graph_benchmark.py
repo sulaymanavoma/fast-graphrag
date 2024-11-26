@@ -126,7 +126,7 @@ if __name__ == "__main__":
             [f"{title}: {corpus}" for title, corpus in tuple(corpus.items())],
             metadata=[{"id": title} for title in tuple(corpus.keys())],
         )
-    elif args.benchmark:
+    if args.benchmark:
         queries = get_queries(dataset)
         print("Dataset loaded. Queries:", len(queries))
         grag = GraphRAG(
