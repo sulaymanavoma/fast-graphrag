@@ -18,10 +18,10 @@ from tenacity import (
 )
 
 from fast_graphrag._exceptions import LLMServiceNoResponseError
-from fast_graphrag._types import BTResponseModel, GTResponseModel
+from fast_graphrag._types import BaseModelAlias
 from fast_graphrag._utils import TOKEN_TO_CHAR_RATIO, logger, throttle_async_func_call
 
-from ._base import BaseEmbeddingService, BaseLLMService
+from ._base import BaseEmbeddingService, BaseLLMService, T_model
 
 TIMEOUT_SECONDS = 180.0
 
@@ -38,16 +38,16 @@ class OpenAILLMService(BaseLLMService):
             AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS)
         )
 
-    @throttle_async_func_call(max_concurrent=256, stagger_time=0.001, waitting_time=0.001)
+    @throttle_async_func_call(max_concurrent=256, stagger_time=0.001, waiting_time=0.001)
     async def send_message(
         self,
         prompt: str,
         model: str | None = None,
         system_prompt: str | None = None,
         history_messages: list[dict[str, str]] | None = None,
-        response_model: Type[GTResponseModel] | None = None,
+        response_model: Type[T_model] | None = None,
         **kwargs: Any,
-    ) -> Tuple[GTResponseModel, list[dict[str, str]]]:
+    ) -> Tuple[T_model, list[dict[str, str]]]:
         """Send a message to the language model and receive a response.
 
         Args:
@@ -77,11 +77,11 @@ class OpenAILLMService(BaseLLMService):
 
         messages.append({"role": "user", "content": prompt})
 
-        llm_response: GTResponseModel = await self.llm_async_client.chat.completions.create(
+        llm_response: T_model = await self.llm_async_client.chat.completions.create(
             model=model,
             messages=messages,  # type: ignore
             response_model=response_model.Model
-            if response_model and issubclass(response_model, BTResponseModel)
+            if response_model and issubclass(response_model, BaseModelAlias)
             else response_model,
             **kwargs,
             max_retries=AsyncRetrying(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10)),
@@ -99,8 +99,8 @@ class OpenAILLMService(BaseLLMService):
         )
         logger.debug(f"Received response: {llm_response}")
 
-        if response_model and issubclass(response_model, BTResponseModel):
-            llm_response = cast(GTResponseModel, cast(BTResponseModel.Model, llm_response).to_dataclass(llm_response))
+        if response_model and issubclass(response_model, BaseModelAlias):
+            llm_response = cast(T_model, cast(BaseModelAlias.Model, llm_response).to_dataclass(llm_response))
 
         return llm_response, messages
 

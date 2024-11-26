@@ -6,9 +6,10 @@ from typing import Counter, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from fast_graphrag._llm._base import format_and_send_prompt
 from fast_graphrag._llm._llm_openai import BaseLLMService
+from fast_graphrag._models import TEditRelationList
 from fast_graphrag._prompt import PROMPTS
 from fast_graphrag._storage._base import BaseGraphStorage
-from fast_graphrag._types import GTEdge, GTId, GTNode, TEditRelationList, TEntity, THash, TId, TIndex, TRelation
+from fast_graphrag._types import GTEdge, GTId, GTNode, TEntity, THash, TId, TIndex, TRelation
 from fast_graphrag._utils import logger
 
 from ._base import BaseEdgeUpsertPolicy, BaseGraphUpsertPolicy, BaseNodeUpsertPolicy

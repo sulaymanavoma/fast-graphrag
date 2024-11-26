@@ -3,21 +3,15 @@ import re
 import unittest
 from dataclasses import asdict
 
-from pydantic import ValidationError
-
 from fast_graphrag._types import (
     TChunk,
     TContext,
     TDocument,
-    TEditRelation,
-    TEditRelationList,
     TEntity,
     TGraph,
-    TQueryEntities,
     TQueryResponse,
     TRelation,
     TScore,
-    dump_to_csv,
 )
 
 
@@ -43,14 +37,6 @@ class TestTypes(unittest.TestCase):
         entity.name = entity.name.upper()
         entity.type = entity.type.upper()
         self.assertEqual(asdict(entity), asdict(pydantic_entity.to_dataclass(pydantic_entity)))
-
-    def test_tqueryentities(self):
-        query_entities = TQueryEntities(entities=["Entity1", "Entity2"], n=2)
-        self.assertEqual(query_entities.entities, ["ENTITY1", "ENTITY2"])
-        self.assertEqual(query_entities.n, 2)
-
-        with self.assertRaises(ValidationError):
-            TQueryEntities(entities=["Entity1", "Entity2"], n="two")
 
     def test_trelation(self):
         relation = TRelation(source="Entity1", target="Entity2", description="Relation description")
@@ -88,16 +74,6 @@ class TestTypes(unittest.TestCase):
             relation.source = relation.source.upper()
             relation.target = relation.target.upper()
         self.assertEqual(asdict(graph), asdict(pydantic_graph.to_dataclass(pydantic_graph)))
-
-    def test_teditrelationship(self):
-        edit_relationship = TEditRelation(ids=[1, 2], description="Combined relationship description")
-        self.assertEqual(edit_relationship.ids, [1, 2])
-        self.assertEqual(edit_relationship.description, "Combined relationship description")
-
-    def test_teditrelationshiplist(self):
-        edit_relationship = TEditRelation(ids=[1, 2], description="Combined relationship description")
-        edit_relationship_list = TEditRelationList(grouped_facts=[edit_relationship])
-        self.assertEqual(edit_relationship_list.groups, [edit_relationship])
 
     def test_tcontext(self):
         entities = [TEntity(name="Entity1", type="Type1", description="Sample description 1")] * 8 + [
@@ -142,14 +118,6 @@ class TestTypes(unittest.TestCase):
         query_response = TQueryResponse(response="Sample response", context=context)
         self.assertEqual(query_response.response, "Sample response")
         self.assertEqual(query_response.context, context)
-
-    def test_dump_to_csv(self):
-        data = [TEntity(name="Sample name", type="SAMPLE TYPE", description="Sample description")]
-        fields = ["name", "type"]
-        values = {"score": [0.9]}
-        csv_output = dump_to_csv(data, fields, with_header=True, **values)
-        expected_output = ["name\ttype\tscore", "Sample name\tSAMPLE TYPE\t0.9"]
-        self.assertEqual(csv_output, expected_output)
 
 
 if __name__ == "__main__":

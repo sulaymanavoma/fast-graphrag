@@ -8,9 +8,10 @@ from typing import Dict, Iterable, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 from fast_graphrag._llm import BaseLLMService, format_and_send_prompt
+from fast_graphrag._models import TQueryEntities
 from fast_graphrag._storage._base import BaseGraphStorage
 from fast_graphrag._storage._gdb_igraph import IGraphStorage, IGraphStorageConfig
-from fast_graphrag._types import GTId, TChunk, TEntity, TGraph, TQueryEntities, TRelation
+from fast_graphrag._types import GTId, TChunk, TEntity, TGraph, TRelation
 from fast_graphrag._utils import logger
 
 from ._base import BaseInformationExtractionService

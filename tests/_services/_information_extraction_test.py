@@ -4,10 +4,11 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fast_graphrag._llm._base import BaseLLMService
+from fast_graphrag._models import TQueryEntities
 from fast_graphrag._policies._graph_upsert import BaseGraphUpsertPolicy
 from fast_graphrag._services import DefaultInformationExtractionService
 from fast_graphrag._storage._base import BaseGraphStorage
-from fast_graphrag._types import TGraph, TQueryEntities
+from fast_graphrag._types import TGraph
 
 
 class TestDefaultInformationExtractionService(unittest.IsolatedAsyncioTestCase):

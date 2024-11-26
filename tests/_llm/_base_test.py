@@ -21,12 +21,12 @@ class TestFormatAndSendPrompt(unittest.IsolatedAsyncioTestCase):
             prompt_key="example_prompt",
             llm=mock_llm,
             format_kwargs={"name": "World"},
-            response_model=str
+            response_model=None
         )
 
         mock_llm.send_message.assert_called_once_with(
             prompt="Hello, World!",
-            response_model=str
+            response_model=None
         )
         self.assertEqual(result, mock_response)
 
@@ -40,14 +40,14 @@ class TestFormatAndSendPrompt(unittest.IsolatedAsyncioTestCase):
             prompt_key="example_prompt",
             llm=mock_llm,
             format_kwargs={"name": "World"},
-            response_model=str,
+            response_model=None,
             model="test_model",
             max_tokens=100
         )
 
         mock_llm.send_message.assert_called_once_with(
             prompt="Hello, World!",
-            response_model=str,
+            response_model=None,
             model="test_model",
             max_tokens=100
         )

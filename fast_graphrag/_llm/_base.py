@@ -1,34 +1,37 @@
 """LLM Services module."""
 
 from dataclasses import dataclass, field
-from typing import Any, Optional, Tuple, Type
+from typing import Any, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
+from pydantic import BaseModel
 
+from fast_graphrag._models import BaseModelAlias
 from fast_graphrag._prompt import PROMPTS
-from fast_graphrag._types import GTResponseModel
+
+T_model = TypeVar("T_model", bound=Union[str, BaseModel, BaseModelAlias])
 
 
 async def format_and_send_prompt(
     prompt_key: str,
     llm: "BaseLLMService",
     format_kwargs: dict[str, Any],
-    response_model: Type[GTResponseModel] | None = None,
+    response_model: Type[T_model] | None = None,
     **args: Any,
-) -> Tuple[GTResponseModel, list[dict[str, str]]]:
+) -> Tuple[T_model, list[dict[str, str]]]:
     """Get a prompt, format it with the supplied args, and send it to the LLM.
 
     Args:
         prompt_key (str): The key for the prompt in the PROMPTS dictionary.
         llm (BaseLLMService): The LLM service to use for sending the message.
-        response_model (Type[GTResponseModel]): The expected response model.
+        response_model (Type[T_model]): The expected response model.
         format_kwargs (dict[str, Any]): Dictionary of arguments to format the prompt.
         model (str | None): The model to use for the LLM. Defaults to None.
         max_tokens (int | None): The maximum number of tokens for the response. Defaults to None.
         **args (Any): Additional keyword arguments to pass to the LLM.
 
     Returns:
-        GTResponseModel: The response from the LLM.
+        T_model: The response from the LLM.
     """
     # Get the prompt from the PROMPTS dictionary
     prompt = PROMPTS[prompt_key]
@@ -55,9 +58,9 @@ class BaseLLMService:
         model: str | None = None,
         system_prompt: str | None = None,
         history_messages: list[dict[str, str]] | None = None,
-        response_model: Type[GTResponseModel] | None = None,
+        response_model: Type[T_model] | None = None,
         **kwargs: Any,
-    ) -> Tuple[GTResponseModel, list[dict[str, str]]]:
+    ) -> Tuple[T_model, list[dict[str, str]]]:
         """Send a message to the language model and receive a response.
 
         Args:
