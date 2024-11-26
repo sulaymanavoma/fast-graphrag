@@ -10,7 +10,6 @@ from pydantic._internal import _model_construction
 
 def _json_schema_slim(schema: dict[str, Any]) -> None:
     schema.pop("required")
-    schema.pop("type")
     for prop in schema.get("properties", {}).values():
         prop.pop("title", None)
 
