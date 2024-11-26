@@ -5,28 +5,28 @@ The scripts in this directory will generate and evaluate the 2wikimultihopqa dat
 
 The output should looks similar at follow (the exact numbers could vary based on your graph configuration)
 ```
-Evaluation of the performance of the VDB and GraphDB on the same data (51 queries)
+Evaluation of the performance of the VectorDB and Circlemind on the same data (51 queries)
 
-VDB
+VectorDB
 Loading dataset...
-Percentage of queries with perfect retrieval: 0.49019607843137253
-[multihop] Percentage of queries with perfect retrieval: 0.32432432432432434
+[all questions] Percentage of queries with perfect retrieval: 0.49019607843137253
+[multihop only] Percentage of queries with perfect retrieval: 0.32432432432432434
 
-Graph
+Circlemind
 Loading dataset...
-Percentage of queries with perfect retrieval: 0.9607843137254902
-[multihop] Percentage of queries with perfect retrieval: 0.9459459459459459
+[all questions] Percentage of queries with perfect retrieval: 0.9607843137254902
+[multihop only] Percentage of queries with perfect retrieval: 0.9459459459459459
 
 
-Evaluation of the performance of the VDB and GraphDB on the same data (101 queries)
+Evaluation of the performance of the VectorDB and Circlemind on the same data (101 queries)
 
-VDB
+VectorDB
 Loading dataset...
-Percentage of queries with perfect retrieval: 0.4158415841584158
-[multihop] Percentage of queries with perfect retrieval: 0.2318840579710145
+[all questions] Percentage of queries with perfect retrieval: 0.4158415841584158
+[multihop only] Percentage of queries with perfect retrieval: 0.2318840579710145
 
-Graph
+Circlemind
 Loading dataset...
-Percentage of queries with perfect retrieval: 0.9306930693069307
-[multihop] Percentage of queries with perfect retrieval: 0.8985507246376812
+[all questions] Percentage of queries with perfect retrieval: 0.9306930693069307
+[multihop only] Percentage of queries with perfect retrieval: 0.8985507246376812
 ```
