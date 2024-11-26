@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from fast_graphrag._llm._llm_openai import BaseLLMService
+from fast_graphrag._models import TEntityDescription
 from fast_graphrag._policies._graph_upsert import (
     DefaultEdgeUpsertPolicy,
     # DefaultGraphUpsertPolicy,
@@ -29,7 +30,7 @@ class TestNodeUpsertPolicy_SummarizeDescription(unittest.IsolatedAsyncioTestCase
         source_nodes = [node1, node2]
 
         # Mock methods
-        llm.send_message.return_value = ("This is a summary.", None)
+        llm.send_message.return_value = (TEntityDescription(description="This is a summary."), None)
         target.get_node = AsyncMock(return_value=(None, None))
         target.upsert_node.side_effect = lambda node, node_index: node_index or 0
 
