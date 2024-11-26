@@ -8,6 +8,7 @@ from pydantic._internal import _model_construction
 # LLM Models
 ####################################################################################################
 
+
 def _json_schema_slim(schema: dict[str, Any]) -> None:
     schema.pop("required")
     for prop in schema.get("properties", {}).values():
@@ -20,7 +21,7 @@ class _BaseModelAliasMeta(_model_construction.ModelMetaclass):
     ) -> type:
         if alias:
             dct["__qualname__"] = alias
-            name=alias
+            name = alias
         return super().__new__(cls, name, bases, dct, json_schema_extra=_json_schema_slim, **kwargs)
 
 
@@ -37,6 +38,7 @@ class BaseModelAlias:
 ####################################################################################################
 # LLM Dumping to strings
 ####################################################################################################
+
 
 def dump_to_csv(
     data: Iterable[object],
@@ -71,6 +73,10 @@ def dump_to_reference_list(data: Iterable[object], separator: str = "\n=====\n\n
 ####################################################################################################
 
 
+class TAnswer(BaseModel):
+    answer: str
+
+
 class TEditRelation(BaseModel):
     ids: List[int] = Field(..., description="Ids of the facts that you are combining into one")
     description: str = Field(
@@ -84,6 +90,11 @@ class TEditRelationList(BaseModel):
         description="List of new fact groups; include only groups of more than one fact",
         alias="grouped_facts",
     )
+
+
+class TEntityDescription(BaseModel):
+    description: str
+
 
 class TQueryEntities(BaseModel):
     entities: List[str] = Field(

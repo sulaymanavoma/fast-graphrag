@@ -9,14 +9,14 @@ from pydantic import BaseModel
 from fast_graphrag._models import BaseModelAlias
 from fast_graphrag._prompt import PROMPTS
 
-T_model = TypeVar("T_model", bound=Union[str, BaseModel, BaseModelAlias])
+T_model = TypeVar("T_model", bound=Union[BaseModel, BaseModelAlias])
 
 
 async def format_and_send_prompt(
     prompt_key: str,
     llm: "BaseLLMService",
     format_kwargs: dict[str, Any],
-    response_model: Type[T_model] | None = None,
+    response_model: Type[T_model],
     **args: Any,
 ) -> Tuple[T_model, list[dict[str, str]]]:
     """Get a prompt, format it with the supplied args, and send it to the LLM.

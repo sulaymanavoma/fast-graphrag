@@ -6,7 +6,7 @@ from typing import Counter, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from fast_graphrag._llm._base import format_and_send_prompt
 from fast_graphrag._llm._llm_openai import BaseLLMService
-from fast_graphrag._models import TEditRelationList
+from fast_graphrag._models import TEditRelationList, TEntityDescription
 from fast_graphrag._prompt import PROMPTS
 from fast_graphrag._storage._base import BaseGraphStorage
 from fast_graphrag._types import GTEdge, GTId, GTNode, TEntity, THash, TId, TIndex, TRelation
@@ -29,10 +29,12 @@ async def summarize_entity_description(
         description=description
     )
     new_description, _ = await llm.send_message(
-        prompt=formatted_entity_description_summarization_prompt, response_model=str, max_tokens=max_tokens
+        prompt=formatted_entity_description_summarization_prompt,
+        response_model=TEntityDescription,
+        max_tokens=max_tokens,
     )
 
-    return new_description
+    return new_description.description
 
 
 ####################################################################################################

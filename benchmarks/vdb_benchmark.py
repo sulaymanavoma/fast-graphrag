@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 from fast_graphrag._llm._llm_openai import OpenAIEmbeddingService, OpenAILLMService
+from fast_graphrag._models import TAnswer
 from fast_graphrag._storage._base import BaseStorage
 from fast_graphrag._storage._ikv_pickle import PickleIndexedKeyValueStorage
 from fast_graphrag._storage._namespace import Workspace
@@ -31,7 +32,8 @@ async def format_and_send_prompt(
     formatted_prompt = prompt.format(**format_kwargs)
 
     # Send the formatted prompt to the LLM
-    return await llm.send_message(prompt=formatted_prompt, response_model=str, **args)
+    response, rest = await llm.send_message(prompt=formatted_prompt, response_model=TAnswer, **args)
+    return response.answer, rest
 
 
 def dump_to_reference_list(data: Iterable[object], separator: str = "\n=====\n\n"):

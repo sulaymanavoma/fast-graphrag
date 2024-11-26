@@ -31,11 +31,13 @@ class OpenAILLMService(BaseLLMService):
     """LLM Service for OpenAI LLMs."""
 
     model: Optional[str] = field(default="gpt-4o-mini")
+    mode: instructor.Mode = field(default=instructor.Mode.TOOLS_STRICT)
 
     def __post_init__(self):
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
         self.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(
-            AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS)
+            AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS),
+            mode=self.mode
         )
 
     @throttle_async_func_call(max_concurrent=256, stagger_time=0.001, waiting_time=0.001)

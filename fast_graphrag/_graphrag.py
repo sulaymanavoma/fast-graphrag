@@ -5,6 +5,7 @@ from typing import Any, Dict, Generic, List, Optional, Tuple, Union
 
 from fast_graphrag._llm import BaseLLMService, format_and_send_prompt
 from fast_graphrag._llm._base import BaseEmbeddingService
+from fast_graphrag._models import TAnswer
 from fast_graphrag._policies._base import BaseEdgeUpsertPolicy, BaseGraphUpsertPolicy, BaseNodeUpsertPolicy
 from fast_graphrag._prompt import PROMPTS
 from fast_graphrag._services._chunk_extraction import BaseChunkingService
@@ -184,7 +185,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
 
         # Ask LLM
         if params.only_context:
-            llm_response = ""
+            answer = ""
         else:
             llm_response, _ = await format_and_send_prompt(
                 prompt_key="generate_response_query_with_references"
@@ -201,10 +202,11 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
                         }
                     ),
                 },
-                response_model=str,
+                response_model=TAnswer,
             )
+            answer = llm_response.answer
 
-        return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](response=llm_response, context=relevant_state)
+        return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](response=answer, context=relevant_state)
 
     def save_graphml(self, output_path: str) -> None:
         """Save the graph in GraphML format."""

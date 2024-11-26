@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fast_graphrag._graphrag import BaseGraphRAG
+from fast_graphrag._models import TAnswer
 from fast_graphrag._types import TContext, TQueryResponse
 
 
@@ -49,7 +50,7 @@ class TestBaseGraphRAG(unittest.IsolatedAsyncioTestCase):
     async def test_async_query(self, format_and_send_prompt):
         self.information_extraction_service.extract_entities_from_query = AsyncMock(return_value=["entities"])
         self.state_manager.get_context = AsyncMock(return_value=TContext([], [], []))
-        format_and_send_prompt.return_value=("response", None)
+        format_and_send_prompt.return_value=(TAnswer(answer="response"), None)
 
         response = await self.graph_rag.async_query("test_query")
 
