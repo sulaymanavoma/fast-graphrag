@@ -77,9 +77,10 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         if top_k > self.config.ef_search:
             self._index.set_ef(top_k)
 
+        # distances is [0, 2] (best, worst)
         ids, distances = self._index.knn_query(data=embeddings, k=top_k, num_threads=self.config.num_threads)
 
-        return ids, 1.0 - np.array(distances, dtype=TScore)
+        return ids, 1.0 - np.array(distances, dtype=TScore) * 0.5
 
     async def score_all(
         self, embeddings: Iterable[GTEmbedding], top_k: int = 1, confidence_threshold: float = 0.0
@@ -97,10 +98,11 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         if top_k > self.config.ef_search:
             self._index.set_ef(top_k)
 
+        # distances is [0, 2] (best, worst)
         ids, distances = self._index.knn_query(data=embeddings, k=top_k, num_threads=self.config.num_threads)
 
         ids = np.array(ids)
-        scores = np.array(distances, dtype=TScore)
+        scores = 1.0 - np.array(distances, dtype=TScore) * 0.5
 
         # Create sparse distance matrix with shape (#embeddings, #all_embeddings)
         flattened_ids = ids.ravel()
@@ -110,8 +112,6 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
             (flattened_scores, (np.repeat(np.arange(len(ids)), top_k), flattened_ids)),
             shape=(len(ids), self.size),
         )
-
-        scores.data = (2.0 - scores.data) * 0.5
 
         return scores
 
