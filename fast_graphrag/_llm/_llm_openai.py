@@ -19,7 +19,7 @@ from tenacity import (
 
 from fast_graphrag._exceptions import LLMServiceNoResponseError
 from fast_graphrag._types import BaseModelAlias
-from fast_graphrag._utils import TOKEN_TO_CHAR_RATIO, logger, throttle_async_func_call
+from fast_graphrag._utils import logger, throttle_async_func_call
 
 from ._base import BaseEmbeddingService, BaseLLMService, T_model
 
@@ -31,13 +31,12 @@ class OpenAILLMService(BaseLLMService):
     """LLM Service for OpenAI LLMs."""
 
     model: Optional[str] = field(default="gpt-4o-mini")
-    mode: instructor.Mode = field(default=instructor.Mode.TOOLS_STRICT)
+    mode: instructor.Mode = field(default=instructor.Mode.JSON)
 
     def __post_init__(self):
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
         self.llm_async_client: instructor.AsyncInstructor = instructor.from_openai(
-            AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS),
-            mode=self.mode
+            AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS), mode=self.mode
         )
 
     @throttle_async_func_call(max_concurrent=256, stagger_time=0.001, waiting_time=0.001)
@@ -112,7 +111,7 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
     """Base class for Language Model implementations."""
 
     embedding_dim: int = field(default=1536)
-    max_request_tokens: int = 8000
+    max_elements_per_request: int = field(default=32)
     model: Optional[str] = field(default="text-embedding-3-small")
 
     def __post_init__(self):
@@ -121,9 +120,7 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
         )
         logger.debug("Initialized OpenAIEmbeddingService with OpenAI client.")
 
-    async def encode(
-        self, texts: list[str], model: Optional[str] = None
-    ) -> np.ndarray[Any, np.dtype[np.float32]]:
+    async def encode(self, texts: list[str], model: Optional[str] = None) -> np.ndarray[Any, np.dtype[np.float32]]:
         """Get the embedding representation of the input text.
 
         Args:
@@ -138,23 +135,11 @@ class OpenAIEmbeddingService(BaseEmbeddingService):
         if model is None:
             raise ValueError("Model name must be provided.")
 
-        # Chunk the requests to size limits
-        max_chunk_length = self.max_request_tokens * TOKEN_TO_CHAR_RATIO
-        text_chunks: List[List[str]] = []
-
-        current_chunk: List[str] = []
-        current_chunk_length = 0
-        for text in texts:
-            text_length = len(text)
-            if text_length + current_chunk_length > max_chunk_length:
-                text_chunks.append(current_chunk)
-                current_chunk = []
-                current_chunk_length = 0
-            current_chunk.append(text)
-            current_chunk_length += text_length
-        text_chunks.append(current_chunk)
-
-        response = await asyncio.gather(*[self._embedding_request(chunk, model) for chunk in text_chunks])
+        batched_texts = [
+            texts[i * self.max_elements_per_request : (i + 1) * self.max_elements_per_request]
+            for i in range((len(texts) + self.max_elements_per_request - 1) // self.max_elements_per_request)
+        ]
+        response = await asyncio.gather(*[self._embedding_request(b, model) for b in batched_texts])
 
         data = chain(*[r.data for r in response])
         embeddings = np.array([dp.embedding for dp in data])
