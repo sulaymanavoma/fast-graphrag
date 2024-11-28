@@ -35,7 +35,7 @@ from ._base import BaseStateManagerService
 @dataclass
 class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THash, TChunk, TId, TEmbedding]):
     blob_storage_cls: Type[BaseBlobStorage[csr_matrix]] = field(default=PickleBlobStorage)
-    similarity_score_threshold: float = field(default=0.8)
+    similarity_score_threshold: float = field(default=0.80)
 
     def __post_init__(self):
         assert self.workspace is not None, "Workspace must be provided."
@@ -184,18 +184,18 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
         try:
             entity_names = [entity.name for entity in entities]
-            if len(entity_names) == 0:
-                return None
 
             query_embeddings = await self.embedding_service.encode(entity_names + [query])
-            # query_embeddings = await self.embedding_service.get_embedding([query])
 
             # Similarity-search over entities
-            vdb_entity_scores_by_name = await self._score_entities_by_vectordb(
-                query_embeddings=query_embeddings[:-1], top_k=1
-            )
+            if len(entity_names) > 0:
+                vdb_entity_scores_by_name = await self._score_entities_by_vectordb(
+                    query_embeddings=query_embeddings[:-1], top_k=1
+                )
+            else:
+                vdb_entity_scores_by_name = 0
             vdb_entity_scores_by_query = await self._score_entities_by_vectordb(
-                query_embeddings=query_embeddings[-1:], top_k=16
+                query_embeddings=query_embeddings[-1:], top_k=8
             )
 
             vdb_entity_scores = vdb_entity_scores_by_name + vdb_entity_scores_by_query
