@@ -18,12 +18,12 @@ Loading dataset...
 LightRAG [local mode]
 Loading dataset...
 Percentage of queries with perfect retrieval: 0.47058823529411764
-[multihop] Percentage of queries with perfect retrieval: 0.32432432432432434
+[multihop only] Percentage of queries with perfect retrieval: 0.32432432432432434
 
 GraphRAG [local mode]
 Loading dataset...
-Percentage of queries with perfect retrieval: 0.7450980392156863
-[multihop] Percentage of queries with perfect retrieval: 0.6756756756756757
+[all questions] Percentage of queries with perfect retrieval: 0.7450980392156863
+[multihop only] Percentage of queries with perfect retrieval: 0.6756756756756757
 
 Circlemind
 Loading dataset...
@@ -40,13 +40,13 @@ Loading dataset...
 
 LightRAG [local mode]
 Loading dataset...
-Percentage of queries with perfect retrieval: 0.44554455445544555
-[multihop] Percentage of queries with perfect retrieval: 0.2753623188405797
+[all questions] Percentage of queries with perfect retrieval: 0.44554455445544555
+[multihop only] Percentage of queries with perfect retrieval: 0.2753623188405797
 
 GraphRAG [local mode]
 Loading dataset...
-Percentage of queries with perfect retrieval: 0.7326732673267327
-[multihop] Percentage of queries with perfect retrieval: 0.6376811594202898
+[all questions] Percentage of queries with perfect retrieval: 0.7326732673267327
+[multihop only] Percentage of queries with perfect retrieval: 0.6376811594202898
 
 Circlemind
 Loading dataset...
@@ -54,14 +54,12 @@ Loading dataset...
 [multihop only] Percentage of queries with perfect retrieval: 0.8985507246376812
 ```
 
-We also quickly benchmarked on the HotpotQA dataset (we will soon release the code for that as well). Here's a preview of the results (101 queries):
+We also benchmarked on the HotpotQA dataset (we will soon release the code for that as well). Here's a preview of the results (101 queries):
 
 ```
 VectorDB: 0.78
-
 LightRAG [local mode]: 0.55
 GraphRAG [local mode]: - (crashed after half an hour of processing)
-
 Circlemind: 0.84
 ```
 
