@@ -39,7 +39,7 @@ We also briefly report the insertion times for the 2wikimultihopqa benchmark (~8
 |**Circlemind**|              ~1.5|
 
 ### Run it yourself
-The scripts in this directory will generate and evaluate the 2wikimultihopqa datasets on a subsets of 51 and 101 queries with the same methodology as in the HippoRAG paper. In particular, we evaluate the retrieval capabilities of each method, mesauring the percentage of queries for which all the required evidence was retrieved. We preloaded the results so it is enough to run `evaluate.xx` to get the numbers. You can also run `create_dbs.xx` to regenerate the databases for the different methods.  
+The scripts in this directory will generate and evaluate the 2wikimultihopqa datasets on a subsets of 51 and 101 queries with the same methodology as in the HippoRAG paper. In particular, we evaluate the retrieval capabilities of each method, mesauring the percentage of queries for which all the required evidence was retrieved. We preloaded the results so it is enough to run `evaluate_dbs.xx` to get the numbers. You can also run `create_dbs.xx` to regenerate the databases for the different methods.  
 A couple of NOTES:
 - you will need to set an OPENAI_API_KEY;
 - LightRAG and GraphRAG could take a while (~1 hour) to process;
