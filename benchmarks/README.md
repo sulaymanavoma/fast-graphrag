@@ -1,6 +1,6 @@
 ## Benchmarks
 We validate the benchmark results provided in [HippoRAG](https://arxiv.org/abs/2405.14831), as well as comparing with other methods:
-- NaiveRAG using the embedder `text-embedding-3-small`
+- NaiveRAG (vector dbs) using the embedder `text-embedding-3-small`
 - [LightRAG](https://github.com/HKUDS/LightRAG) 
 - [GraphRAG](https://github.com/gusye1234/nano-graphrag) (we use the implementation provided by `nano-graphrag`, based on the original [Microsoft GraphRAG](https://github.com/microsoft/graphrag))
 
