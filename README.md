@@ -28,7 +28,7 @@
 > [!NOTE]
 > Using *The Wizard of Oz*, `fast-graphrag` costs $0.08 vs. `graphrag` $0.48 — **a 6x costs saving** that further improves with data size and number of insertions. Stay tuned for the official benchmarks, and join us as a contributor!
 
-## News
+## News (and Coming Soon)
 - [ ] Support for IDF weightening of entities
 - [ ] Support for generic entities and concepts
 - [x] [2024.12.02] Benchmarks comparing Fast GraphRAG to LightRAG, GraphRAG and VectorDBs released [here](https://github.com/circlemind-ai/fast-graphrag/blob/main/benchmarks/README.md)
