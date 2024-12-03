@@ -6,27 +6,27 @@ We validate the benchmark results provided in [HippoRAG](https://arxiv.org/abs/2
 
 ### Results
 **2wikimultihopQA**
-| # Queries |  Method  | All questions % | Multihop only % |
-|----------:|:--------:|----------------:|----------------:|
+| # Queries |  Method  | All queries % | Multihop only % |
+|----------:|:--------:|--------------:|----------------:|
 |         51||||
-|           |  VectorDB|             0.49|             0.32|
-|           |  LightRAG|             0.47|             0.32|
-|           |  GraphRAG|             0.75|             0.68|
-|           |**Circlemind**|             0.96|             0.95|
+|           |  VectorDB|           0.49|             0.32|
+|           |  LightRAG|           0.47|             0.32|
+|           |  GraphRAG|           0.75|             0.68|
+|           |**Circlemind**|           0.96|             0.95|
 |        101||||
-|           |  VectorDB|             0.42|             0.23|
-|           |  LightRAG|             0.45|             0.28|
-|           |  GraphRAG|             0.73|             0.64|
-|           |**Circlemind**|             0.93|             0.90|
+|           |  VectorDB|           0.42|             0.23|
+|           |  LightRAG|           0.45|             0.28|
+|           |  GraphRAG|           0.73|             0.64|
+|           |**Circlemind**|           0.93|             0.90|
 
 **HotpotQA**
-| # Queries |  Method  | All questions % |
-|----------:|:--------:|----------------:|
+| # Queries |  Method  | All queries % |
+|----------:|:--------:|--------------:|
 |        101|||
-|           |  VectorDB|             0.78|
-|           |  LightRAG|             0.55|
-|           |  GraphRAG|               -*|
-|           |**Circlemind**|             0.84|
+|           |  VectorDB|           0.78|
+|           |  LightRAG|           0.55|
+|           |  GraphRAG|             -*|
+|           |**Circlemind**|           0.84|
 
 *: crashes after half an hour of processing
 
