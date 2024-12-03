@@ -4,9 +4,49 @@ We validate the benchmark results provided in [HippoRAG](https://arxiv.org/abs/2
 - [LightRAG](https://github.com/HKUDS/LightRAG) 
 - [GraphRAG](https://github.com/gusye1234/nano-graphrag) (we use the implementation provided by `nano-graphrag`, based on the original [Microsoft GraphRAG](https://github.com/microsoft/graphrag))
 
-The scripts in this directory will generate and evaluate the 2wikimultihopqa datasets on a subsets of 51 and 101 queries with the same methodology as in the HippoRAG paper. In particular, we evaluate the retrieval capabilities of each method, mesauring the percentage of queries for which all the required evidence was retrieved. We preloaded the results so it is enough to run `evaluate.xx` to get the numbers. You can also run `create_dbs.xx` to regenerate the databases for the different methods (you will need to set an OPENAI_API_KEY, LightRAG and GraphRAG could take a while (hours) to process).
+### Results
+**2wikimultihopQA**
+| # Queries |  Method  | All questions % | Multihop only % |
+|----------:|:--------:|----------------:|----------------:|
+|         51||||
+|           |  VectorDB|             0.49|             0.32|
+|           |  LightRAG|             0.47|             0.32|
+|           |  GraphRAG|             0.75|             0.68|
+|           |**Circlemind**|             0.96|             0.95|
+|        101||||
+|           |  VectorDB|             0.42|             0.23|
+|           |  LightRAG|             0.45|             0.28|
+|           |  GraphRAG|             0.73|             0.64|
+|           |**Circlemind**|             0.93|             0.90|
 
-The output should looks similar at follow (the exact numbers could vary based on your graph configuration)
+**HotpotQA**
+| # Queries |  Method  | All questions % |
+|----------:|:--------:|----------------:|
+|        101|||
+|           |  VectorDB|             0.78|
+|           |  LightRAG|             0.55|
+|           |  GraphRAG|               -*|
+|           |**Circlemind**|             0.84|
+
+*: crashes after half an hour of processing
+
+We also briefly report the insertion times for the 2wikimultihopqa benchmark (~800 chunks):
+|  Method  |  Time (minutes)  |
+|:--------:|-----------------:|
+|  VectorDB|              ~0.3|
+|  LightRAG|               ~25|
+|  GraphRAG|               ~40|
+|**Circlemind**|              ~1.5|
+
+### Run it yourself
+The scripts in this directory will generate and evaluate the 2wikimultihopqa datasets on a subsets of 51 and 101 queries with the same methodology as in the HippoRAG paper. In particular, we evaluate the retrieval capabilities of each method, mesauring the percentage of queries for which all the required evidence was retrieved. We preloaded the results so it is enough to run `evaluate.xx` to get the numbers. You can also run `create_dbs.xx` to regenerate the databases for the different methods.  
+A couple of NOTES:
+- you will need to set an OPENAI_API_KEY;
+- LightRAG and GraphRAG could take a while (~1 hour) to process;
+- when pip installing LightRAG, not all dependencies are added; to run it we simply deleted all the imports of each missing dependency (since we use OpenAI they are not necessary).
+- we also benchmarked on the HotpotQA dataset (we will soon release the code for that as well).
+
+The output should looks similar to the following (the exact numbers could vary based on your graph configuration)
 ```
 Evaluation of the performance of different RAG methods on 2wikimultihopqa (51 queries)
 
@@ -53,18 +93,3 @@ Loading dataset...
 [all questions] Percentage of queries with perfect retrieval: 0.9306930693069307
 [multihop only] Percentage of queries with perfect retrieval: 0.8985507246376812
 ```
-
-We also benchmarked on the HotpotQA dataset (we will soon release the code for that as well). Here's a preview of the results (101 queries):
-
-```
-VectorDB: 0.78
-LightRAG [local mode]: 0.55
-GraphRAG [local mode]: - (crashed after half an hour of processing)
-Circlemind: 0.84
-```
-
-We also briefly report the insertion times for the 2wikimultihopqa benchmark (101 queries, which corresponds to ~800 chunks):
-- VectorDB: ~20 seconds
-- LightRAG: ~25 minutes
-- GraphRAG: ~40 minutes
-- Circlemind: ~100 seconds
