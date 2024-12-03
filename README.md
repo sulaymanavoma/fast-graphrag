@@ -28,6 +28,12 @@
 > [!NOTE]
 > Using *The Wizard of Oz*, `fast-graphrag` costs $0.08 vs. `graphrag` $0.48 — **a 6x costs saving** that further improves with data size and number of insertions. Stay tuned for the official benchmarks, and join us as a contributor!
 
+## News
+- [ ] Support for IDF weightening of entities
+- [ ] Support for generic entities and concepts
+- [x] [2024.12.02] Benchmarks comparing Fast GraphRAG to LightRAG, GraphRAG and VectorDBs released [here](https://github.com/circlemind-ai/fast-graphrag/blob/main/benchmarks/README.md)
+- [x] [2024.12.02] We finally have a news section :P 
+
 ## Features
 
 - **Interpretable and Debuggable Knowledge:** Graphs offer a human-navigable view of knowledge that can be queried, visualized, and updated.
@@ -41,18 +47,18 @@ Fast GraphRAG is built to fit seamlessly into your retrieval pipeline, giving yo
 
 ## Install
 
-**Install from PyPi (recommended)**
-
-```bash
-pip install fast-graphrag
-```
-
-**Install from source**
+**Install from source (recommended for best performance)**
 
 ```bash
 # clone this repo first
 cd fast_graphrag
 poetry install
+```
+
+**Install from PyPi (recommended for stability)**
+
+```bash
+pip install fast-graphrag
 ```
 
 ## Quickstart
