@@ -3,7 +3,7 @@
 </h1>
 <h4 align="center">
   <a href="https://github.com/circlemind-ai/fast-graphrag/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="fast-graphrag is released under the MIT license." />
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="fast-graphrag is released under the MIT license." alt="Fast GraphRAG by Circlemind"/>
   </a>
   <a href="https://github.com/circlemind-ai/fast-graphrag/blob/main/CONTRIBUTING.md">
     <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs welcome!" />
