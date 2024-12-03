@@ -5,9 +5,9 @@ python vdb_benchmark.py -n 51 -s
 echo;
 echo "LightRAG [local mode]";
 python lightrag_benchmark.py -n 51 -s --mode=local
-# feel free to try with global as well
-echo "[hybrid mode]";
-python lightrag_benchmark.py -n 51 -s --mode=hybrid
+echo;
+echo "GraphRAG [local mode]";
+python nano_benchmark.py -n 51 -s --mode=local
 echo;
 echo "Circlemind"
 python graph_benchmark.py -n 51 -s
@@ -19,9 +19,9 @@ python vdb_benchmark.py -n 101 -s
 echo;
 echo "LightRAG [local mode]";
 python lightrag_benchmark.py -n 101 -s --mode=local
-# feel free to try with global as well
-echo "[hybrid mode]";
-python lightrag_benchmark.py -n 101 -s --mode=hybrid
+echo;
+echo "GraphRAG [local mode]";
+python nano_benchmark.py -n 101 -s --mode=local
 echo;
 echo "Circlemind";
 python graph_benchmark.py -n 101 -s

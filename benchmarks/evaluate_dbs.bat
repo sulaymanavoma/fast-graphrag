@@ -6,7 +6,9 @@ python vdb_benchmark.py -n 51 -s
 echo.
 echo LightRAG
 python lightrag_benchmark.py -n 51 -s --mode=local
-python lightrag_benchmark.py -n 51 -s --mode=hybrid
+echo.
+echo GraphRAG
+python nano_benchmark.py -n 51 -s --mode=local
 echo.
 echo Circlemind
 python graph_benchmark.py -n 51 -s
@@ -20,7 +22,9 @@ python vdb_benchmark.py -n 101 -s
 echo.
 echo LightRAG
 python lightrag_benchmark.py -n 101 -s --mode=local
-python lightrag_benchmark.py -n 101 -s --mode=hybrid
+echo.
+echo GraphRAG
+python nano_benchmark.py -n 101 -s --mode=local
 echo.
 echo Circlemind
 python graph_benchmark.py -n 101 -s
