@@ -1,6 +1,6 @@
 ## Benchmarks
 We validate the benchmark results provided in [HippoRAG](https://arxiv.org/abs/2405.14831), as well as comparing with other methods:
-- NaiveRAG (vector dbs) using the embedder `text-embedding-3-small`
+- NaiveRAG (vector dbs) using the OpenAI embedder `text-embedding-3-small`
 - [LightRAG](https://github.com/HKUDS/LightRAG) 
 - [GraphRAG](https://github.com/gusye1234/nano-graphrag) (we use the implementation provided by `nano-graphrag`, based on the original [Microsoft GraphRAG](https://github.com/microsoft/graphrag))
 
@@ -12,12 +12,14 @@ We validate the benchmark results provided in [HippoRAG](https://arxiv.org/abs/2
 |           |  VectorDB|           0.49|             0.32|
 |           |  LightRAG|           0.47|             0.32|
 |           |  GraphRAG|           0.75|             0.68|
-|           |**Circlemind**|           0.96|             0.95|
+|           |**Circlemind**|           **0.96**|             **0.95**|
 |        101||||
 |           |  VectorDB|           0.42|             0.23|
 |           |  LightRAG|           0.45|             0.28|
 |           |  GraphRAG|           0.73|             0.64|
-|           |**Circlemind**|           0.93|             0.90|
+|           |**Circlemind**|           **0.93**|             **0.90**|
+
+**Circlemind is up to 4x more accurate than VectorDB RAG.**
 
 **HotpotQA**
 | # Queries |  Method  | All queries % |
@@ -26,11 +28,11 @@ We validate the benchmark results provided in [HippoRAG](https://arxiv.org/abs/2
 |           |  VectorDB|           0.78|
 |           |  LightRAG|           0.55|
 |           |  GraphRAG|             -*|
-|           |**Circlemind**|           0.84|
+|           |**Circlemind**|           **0.84**|
 
 *: crashes after half an hour of processing
 
-We also briefly report the insertion times for the 2wikimultihopqa benchmark (~800 chunks):
+Below, find the insertion times for the 2wikimultihopqa benchmark (~800 chunks):
 |  Method  |  Time (minutes)  |
 |:--------:|-----------------:|
 |  VectorDB|              ~0.3|
@@ -38,15 +40,18 @@ We also briefly report the insertion times for the 2wikimultihopqa benchmark (~8
 |  GraphRAG|               ~40|
 |**Circlemind**|              ~1.5|
 
+**Circlemind is 27x faster than GraphRAG while also being over 40% more accurate in retrieval.**
+
 ### Run it yourself
 The scripts in this directory will generate and evaluate the 2wikimultihopqa datasets on a subsets of 51 and 101 queries with the same methodology as in the HippoRAG paper. In particular, we evaluate the retrieval capabilities of each method, mesauring the percentage of queries for which all the required evidence was retrieved. We preloaded the results so it is enough to run `evaluate_dbs.xx` to get the numbers. You can also run `create_dbs.xx` to regenerate the databases for the different methods.  
+
 A couple of NOTES:
 - you will need to set an OPENAI_API_KEY;
-- LightRAG and GraphRAG could take a while (~1 hour) to process;
+- LightRAG and GraphRAG could take a over an 1 hour to process and they can be expensive;
 - when pip installing LightRAG, not all dependencies are added; to run it we simply deleted all the imports of each missing dependency (since we use OpenAI they are not necessary).
 - we also benchmarked on the HotpotQA dataset (we will soon release the code for that as well).
 
-The output should looks similar to the following (the exact numbers could vary based on your graph configuration)
+The output will look similar to the following (the exact numbers could vary based on your graph configuration)
 ```
 Evaluation of the performance of different RAG methods on 2wikimultihopqa (51 queries)
 
