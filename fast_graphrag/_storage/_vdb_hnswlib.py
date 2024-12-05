@@ -1,6 +1,6 @@
 import pickle
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import hnswlib
 import numpy as np
@@ -16,9 +16,9 @@ from ._base import BaseVectorStorage
 
 @dataclass
 class HNSWVectorStorageConfig:
-    ef_construction: int = field(default=64)
-    M: int = field(default=48)
-    ef_search: int = field(default=64)
+    ef_construction: int = field(default=256)
+    M: int = field(default=64)
+    ef_search: int = field(default=96)
     num_threads: int = field(default=-1)
 
 
@@ -83,10 +83,8 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
         return ids, 1.0 - np.array(distances, dtype=TScore) * 0.5
 
     async def score_all(
-        self, embeddings: Iterable[GTEmbedding], top_k: int = 1, confidence_threshold: float = 0.0
+        self, embeddings: Iterable[GTEmbedding], top_k: int = 1, threshold: Optional[float] = None
     ) -> csr_matrix:
-        if confidence_threshold > 0.0:
-            raise NotImplementedError("Confidence threshold is not supported yet.")
         if not isinstance(embeddings, np.ndarray):
             embeddings = np.array(list(embeddings), dtype=np.float32)
 
@@ -103,6 +101,9 @@ class HNSWVectorStorage(BaseVectorStorage[GTId, GTEmbedding]):
 
         ids = np.array(ids)
         scores = 1.0 - np.array(distances, dtype=TScore) * 0.5
+
+        if threshold is not None:
+            scores[scores < threshold] = 0
 
         # Create sparse distance matrix with shape (#embeddings, #all_embeddings)
         flattened_ids = ids.ravel()

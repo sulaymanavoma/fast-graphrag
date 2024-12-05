@@ -53,8 +53,8 @@ def dump_to_csv(
             chain(
                 separator.join(
                     chain(
-                        (str(getattr(d, field)).replace("\t", "    ") for field in fields),
-                        (str(v).replace("\t", "    ") for v in vs),
+                        (str(getattr(d, field)).replace("\n", "  ").replace("\t", " ") for field in fields),
+                        (str(v).replace("\n", "  ").replace("\t", " ") for v in vs),
                     )
                 )
                 for d, *vs in zip(data, *values.values())
@@ -97,13 +97,21 @@ class TEntityDescription(BaseModel):
 
 
 class TQueryEntities(BaseModel):
-    entities: List[str] = Field(
+    named: List[str] = Field(
         ...,
-        description=("List of entities extracted from the query"),
+        description=("List of named entities extracted from the query"),
     )
-    n: int = Field(..., description="Number of named entities found")  # So that the LLM can answer 0.
+    generic: List[str] = Field(
+        ...,
+        description=("List of generic entities extracted from the query"),
+    )
 
-    @field_validator("entities", mode="before")
+    @field_validator("named", mode="before")
     @classmethod
-    def uppercase_source(cls, value: List[str]):
+    def uppercase_named(cls, value: List[str]):
         return [e.upper() for e in value] if value else value
+
+    # @field_validator("generic", mode="before")
+    # @classmethod
+    # def uppercase_generic(cls, value: List[str]):
+    #     return [e.upper() for e in value] if value else value

@@ -5,7 +5,7 @@ from typing import Any, Awaitable, Dict, Iterable, List, Optional, Tuple, Type, 
 
 import numpy as np
 import numpy.typing as npt
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, vstack
 from tqdm import tqdm
 
 from fast_graphrag._llm import BaseLLMService
@@ -35,7 +35,8 @@ from ._base import BaseStateManagerService
 @dataclass
 class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THash, TChunk, TId, TEmbedding]):
     blob_storage_cls: Type[BaseBlobStorage[csr_matrix]] = field(default=PickleBlobStorage)
-    similarity_score_threshold: float = field(default=0.80)
+    insert_similarity_score_threshold: float = field(default=0.8)
+    query_similarity_score_threshold: Optional[float] = field(default=0.7)
 
     def __post_init__(self):
         assert self.workspace is not None, "Workspace must be provided."
@@ -77,7 +78,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         llm: BaseLLMService,
         subgraphs: List[asyncio.Future[Optional[BaseGraphStorage[TEntity, TRelation, TId]]]],
         documents: Iterable[Iterable[TChunk]],
-        show_progress: bool = True
+        show_progress: bool = True,
     ) -> None:
         nodes: Iterable[List[TEntity]]
         edges: Iterable[List[TRelation]]
@@ -95,12 +96,16 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
             return (nodes, edges)
 
-        graphs = [r for graph in tqdm(
-            asyncio.as_completed([_get_graphs(fgraph) for fgraph in subgraphs]),
-            total=len(subgraphs),
-            desc="Extracting data",
-            disable=not show_progress,
-        ) if (r := await graph) is not None]
+        graphs = [
+            r
+            for graph in tqdm(
+                asyncio.as_completed([_get_graphs(fgraph) for fgraph in subgraphs]),
+                total=len(subgraphs),
+                desc="Extracting data",
+                disable=not show_progress,
+            )
+            if (r := await graph) is not None
+        ]
 
         if len(graphs) == 0:
             return
@@ -136,7 +141,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         # We use the fact that similarity scores are symmetric between entity pairs,
         # so we only select half of that by index order
         similar_indices[
-            (scores < self.similarity_score_threshold)
+            (scores < self.insert_similarity_score_threshold)
             | (similar_indices <= upserted_indices)  # remove indices smaller or equal the entity
         ] = 0  # 0 can be used here (not 100% sure, but 99% sure)
         progress_bar.update(1)
@@ -147,6 +152,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
         # STEP: insert identity edges
         progress_bar.set_description("Building... [identity edges]")
+
         async def _insert_identiy_edges(
             source_index: TIndex, target_indices: npt.NDArray[np.int32]
         ) -> Iterable[Tuple[TIndex, TIndex]]:
@@ -177,30 +183,33 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         progress_bar.set_description("Building [done]")
 
     async def get_context(
-        self, query: str, entities: Iterable[TEntity]
+        self, query: str, entities: Dict[str, List[str]]
     ) -> Optional[TContext[TEntity, TRelation, THash, TChunk]]:
         if self.entity_storage.size == 0:
             return None
 
         try:
-            entity_names = [entity.name for entity in entities]
-
-            query_embeddings = await self.embedding_service.encode(entity_names + [query])
-
-            # Similarity-search over entities
-            if len(entity_names) > 0:
-                vdb_entity_scores_by_name = await self._score_entities_by_vectordb(
-                    query_embeddings=query_embeddings[:-1], top_k=1
-                )
-            else:
-                vdb_entity_scores_by_name = 0
-            vdb_entity_scores_by_query = await self._score_entities_by_vectordb(
-                query_embeddings=query_embeddings[-1:], top_k=8
+            query_embeddings = await self.embedding_service.encode(
+                [f"[NAME] {n}" for n in entities["named"]] + [f"[NAME] {n}" for n in entities["generic"]] + [query]
             )
+            entity_scores: List[csr_matrix] = []
+            # Similarity-search over entities
+            if len(entities["named"]) > 0:
+                vdb_entity_scores_by_named_entity = await self._score_entities_by_vectordb(
+                    query_embeddings=query_embeddings[: len(entities["named"])],
+                    top_k=1,
+                    threshold=self.query_similarity_score_threshold,
+                )
+                entity_scores.append(vdb_entity_scores_by_named_entity)
 
-            vdb_entity_scores = vdb_entity_scores_by_name + vdb_entity_scores_by_query
+            vdb_entity_scores_by_generic_entity_and_query = await self._score_entities_by_vectordb(
+                query_embeddings=query_embeddings[len(entities["named"]) :], top_k=20, threshold=0.5
+            )
+            entity_scores.append(vdb_entity_scores_by_generic_entity_and_query)
 
-            if vdb_entity_scores.nnz == 0:
+            vdb_entity_scores = vstack(entity_scores).max(axis=0)
+
+            if isinstance(vdb_entity_scores, int) or vdb_entity_scores.nnz == 0:
                 return None
         except Exception as e:
             logger.error(f"Error during information extraction and scoring for query entities {entities}.\n{e}")
@@ -254,7 +263,9 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
     async def _get_entities_to_num_docs(self) -> Any:
         raise NotImplementedError
 
-    async def _score_entities_by_vectordb(self, query_embeddings: Iterable[TEmbedding], top_k: int = 1) -> csr_matrix:
+    async def _score_entities_by_vectordb(
+        self, query_embeddings: Iterable[TEmbedding], top_k: int = 1, threshold: Optional[float] = None
+    ) -> csr_matrix:
         # TODO: check this
         # if top_k != 1:
         #     logger.warning(f"Top-k > 1 is not tested yet. Using top_k={top_k}.")
@@ -262,16 +273,15 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
             raise NotImplementedError("Node specificity is not supported yet.")
 
         all_entity_probs_by_query_entity = await self.entity_storage.score_all(
-            np.array(query_embeddings), top_k=top_k
+            np.array(query_embeddings), top_k=top_k, threshold=threshold
         )  # (#query_entities, #all_entities)
 
         # TODO: if top_k > 1, we need to aggregate the scores here
         if all_entity_probs_by_query_entity.shape[1] == 0:
             return all_entity_probs_by_query_entity
-        all_entity_weights: csr_matrix = all_entity_probs_by_query_entity.max(axis=0)  # (1, #all_entities)
-
         # Normalize the scores
-        all_entity_weights /= all_entity_weights.sum()
+        all_entity_probs_by_query_entity /= all_entity_probs_by_query_entity.sum(axis=1) + 1e-8
+        all_entity_weights: csr_matrix = all_entity_probs_by_query_entity.max(axis=0)  # (1, #all_entities)
 
         if self.node_specificity:
             all_entity_weights = all_entity_weights.multiply(1.0 / await self._get_entities_to_num_docs())

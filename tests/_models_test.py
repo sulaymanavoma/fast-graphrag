@@ -15,9 +15,9 @@ from fast_graphrag._types import TEntity
 
 class TestModels(unittest.TestCase):
     def test_tqueryentities(self):
-        query_entities = TQueryEntities(entities=["Entity1", "Entity2"], n=2)
-        self.assertEqual(query_entities.entities, ["ENTITY1", "ENTITY2"])
-        self.assertEqual(query_entities.n, 2)
+        query_entities = TQueryEntities(named=["Entity1", "Entity2"], generic=["Generic1", "Generic2"])
+        self.assertEqual(query_entities.named, ["ENTITY1", "ENTITY2"])
+        self.assertEqual(query_entities.generic, ["Generic1", "Generic2"])
 
         with self.assertRaises(ValidationError):
             TQueryEntities(entities=["Entity1", "Entity2"], n="two")

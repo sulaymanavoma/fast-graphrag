@@ -44,9 +44,7 @@ class TestTypes(unittest.TestCase):
         self.assertEqual(relation.target, "Entity2")
         self.assertEqual(relation.description, "Relation description")
 
-        pydantic_relation = TRelation.Model(
-            source="Entity1", target="Entity2", desc="Relation description"
-        )
+        pydantic_relation = TRelation.Model(source="Entity1", target="Entity2", desc="Relation description")
 
         relation.source = relation.source.upper()
         relation.target = relation.target.upper()
@@ -61,10 +59,8 @@ class TestTypes(unittest.TestCase):
 
         pydantic_graph = TGraph.Model(
             entities=[TEntity.Model(name="Entity1", type="Type1", desc="Description1")],
-            relationships=[
-                TRelation.Model(source="Entity1", target="Entity2", desc="Relation description")
-            ],
-            other_relationships=[]
+            relationships=[TRelation.Model(source="Entity1", target="Entity2", desc="Relation description")],
+            other_relationships=[],
         )
 
         for entity in graph.entities:
@@ -79,7 +75,9 @@ class TestTypes(unittest.TestCase):
         entities = [TEntity(name="Entity1", type="Type1", description="Sample description 1")] * 8 + [
             TEntity(name="Entity2", type="Type2", description="Sample description 2")
         ] * 8
-        relationships = [TRelation(source="Entity1", target="Entity2", description="Relation description 12")] * 8 + [
+        relationships = [
+            TRelation(source="Entity1", target="Entity2", description="Relation description 12")
+        ] * 8 + [
             TRelation(source="Entity2", target="Entity1", description="Relation description 21")
         ] * 8
         chunks = [

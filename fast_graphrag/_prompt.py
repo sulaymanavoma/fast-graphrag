@@ -47,12 +47,12 @@ Output:
 	{{"source": "Radio City", "target": "English", "desc": "Radio City broadcasts English songs."}},
 	{{"source": "Radio City", "target": "Hindi", "desc": "Radio City broadcasts songs in the Hindi language."}},
 	{{"source": "Radio City", "target": "PlanetRadiocity.com", "desc": "Radio City launched PlanetRadiocity.com in May 2008."}},
-	{{"source": "PlanetRadiocity.com", "target": "music portal", "desc": "PlanetRadiocity.com is a music portal that offers music related news, videos and more."}}
+	{{"source": "PlanetRadiocity.com", "target": "music portal", "desc": "PlanetRadiocity.com is a music portal that offers music related news, videos and more."}},
+	{{"source": "PlanetRadiocity.com", "target": "video", "desc": "PlanetRadiocity.com offers music related videos."}}
 	],
 	"other_relationships": [
 	{{"source": "Radio City", "target": "New Media", "desc": "Radio City forayed into New Media in May 2008."}},
 	{{"source": "PlanetRadiocity.com", "target": "news", "desc": "PlanetRadiocity.com offers music related news."}},
-	{{"source": "PlanetRadiocity.com", "target": "video", "desc": "PlanetRadiocity.com offers music related videos."}},
 	{{"source": "PlanetRadiocity.com", "target": "song", "desc": "PlanetRadiocity.com offers songs."}}
 	]
 }}
@@ -68,20 +68,21 @@ PROMPTS["entity_relationship_continue_extraction"] = "MANY entities were missed 
 
 PROMPTS["entity_relationship_gleaning_done_extraction"] = "Retrospectively check if all entities have been correctly identified: answer done if so, or continue if there are still entities that need to be added."
 
-PROMPTS["entity_extraction_query"] = """You are a helpful assistant that helps a human analyst identify all the named entities present in the input query that are important for answering the query.
+PROMPTS["entity_extraction_query"] = """Given the query below, your task is to extract all entities relevant to perform information retrieval to produce an answer.
 
-# Example 1
-Query: Do the magazines Arthur's Magazine or First for Women have the same publisher?
-Ouput: {{"entities": ["Arthur's Magazine", "First for Women"], "n": 2}}
+-Example 1-
+Query: Who directed the film that was shot in or around Leland, North Carolina in 1986?
+Ouput: {{"named": ["Leland", "North Carolina", "1986"], "generic": ["film director"]}}
 
-# Example 2
-Query: Which film has the director who was born earlier, Avatar II: The Return or The Interstellar?
-Ouput: {{"entities": ["Avatar II: The Return", "The Interstellar"], "n": 2}}
+-Example 2-
+Query: What relationship does Fred Gehrke have to the 23rd overall pick in the 2010 Major League Baseball Draft?
+Ouput: {{"named": ["Fred Gehrke", "2010 Major League Baseball Draft"], "generic": ["23rd baseball draft pick"]}}
 
 # INPUT
 Query: {query}
 Output:
 """
+
 
 
 PROMPTS[

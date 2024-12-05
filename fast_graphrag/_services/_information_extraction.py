@@ -41,7 +41,7 @@ class DefaultInformationExtractionService(BaseInformationExtractionService[TChun
 
     async def extract_entities_from_query(
         self, llm: BaseLLMService, query: str, prompt_kwargs: Dict[str, str]
-    ) -> Iterable[TEntity]:
+    ) -> Dict[str, List[str]]:
         """Extract entities from the given query."""
         prompt_kwargs["query"] = query
         entities, _ = await format_and_send_prompt(
@@ -51,7 +51,10 @@ class DefaultInformationExtractionService(BaseInformationExtractionService[TChun
             response_model=TQueryEntities,
         )
 
-        return [TEntity(name=name, type="", description="") for name in entities.entities]
+        return {
+            "named": entities.named,
+            "generic": entities.generic
+        }
 
     async def _extract(
         self, llm: BaseLLMService, chunks: Iterable[TChunk], prompt_kwargs: Dict[str, str], entity_types: List[str]

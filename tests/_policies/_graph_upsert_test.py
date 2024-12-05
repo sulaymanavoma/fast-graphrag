@@ -75,7 +75,7 @@ class TestNodeUpsertPolicy_SummarizeDescription(unittest.IsolatedAsyncioTestCase
 
         self.assertEqual(
             upserted_nodes[0][1].description,
-            "This is a short random description 1.  This is a short random description 2.",
+            "This is a short random description 1.\nThis is a short random description 2.",
         )
 
         # Assertions
