@@ -95,13 +95,13 @@ class TChunk(BTChunk):
 @dataclass
 class TEntity(BaseModelAlias, BTNode):
     name: str = field()
-    type: str = Field()
-    description: str = Field()
+    type: str = field()
+    description: str = field()
 
     def to_str(self) -> str:
         s = f"[NAME] {self.name}"
         if len(self.description):
-            s += f"  [DESCRIPTION] {self.description}"
+            s += f"\n[DESCRIPTION] {self.description}"
         return s
 
     class Model(BaseModelAlias.Model, alias="Entity"):
@@ -171,6 +171,7 @@ class TRelation(BaseModelAlias, BTEdge):
     class Model(BaseModelAlias.Model, alias="Relationship"):
         source: str = Field(..., description="Name of the source entity")
         target: str = Field(..., description="Name of the target entity")
+        # alternative description "Explanation of why the source entity and the target entity are related to each other"
         desc: str = Field(..., description="Description of the relationship between the source and target entity")
 
         @staticmethod
