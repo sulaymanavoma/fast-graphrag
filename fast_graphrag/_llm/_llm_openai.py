@@ -57,7 +57,7 @@ class OpenAILLMService(BaseLLMService):
             raise ValueError("Invalid client type. Must be 'openai' or 'azure'")
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
 
-    @throttle_async_func_call(max_concurrent=256, stagger_time=0.001, waiting_time=0.001)
+    @throttle_async_func_call(max_concurrent=1024, stagger_time=0.001, waiting_time=0.001)
     async def send_message(
         self,
         prompt: str,
