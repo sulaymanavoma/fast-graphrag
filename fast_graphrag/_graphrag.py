@@ -23,11 +23,11 @@ class InsertParam:
 
 @dataclass
 class QueryParam:
-    with_references: bool = False
-    only_context: bool = False
-    entities_max_tokens: int = 4000
-    relationships_max_tokens: int = 3000
-    chunks_max_tokens: int = 9000
+    with_references: bool = field(default=False)
+    only_context: bool = field(default=False)
+    entities_max_tokens: int = field(default=4000)
+    relationships_max_tokens: int = field(default=3000)
+    chunks_max_tokens: int = field(default=9000)
 
 
 @dataclass
