@@ -26,7 +26,7 @@ class QueryParam:
     with_references: bool = field(default=False)
     only_context: bool = field(default=False)
     entities_max_tokens: int = field(default=4000)
-    relationships_max_tokens: int = field(default=3000)
+    relations_max_tokens: int = field(default=3000)
     chunks_max_tokens: int = field(default=9000)
 
 
@@ -187,7 +187,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         context_str = context.truncate(
             max_chars={
                 "entities": params.entities_max_tokens * TOKEN_TO_CHAR_RATIO,
-                "relationships": params.relationships_max_tokens * TOKEN_TO_CHAR_RATIO,
+                "relations": params.relations_max_tokens * TOKEN_TO_CHAR_RATIO,
                 "chunks": params.chunks_max_tokens * TOKEN_TO_CHAR_RATIO,
             },
             output_context_str=not params.only_context

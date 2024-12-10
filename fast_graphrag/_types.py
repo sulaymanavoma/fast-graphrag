@@ -248,7 +248,7 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
     relations: List[Tuple[GTEdge, TScore]] = field()
     chunks: List[Tuple[GTChunk, TScore]] = field()
 
-    def truncate(self, max_chars: Dict[str, int], output_context_str: bool = True) -> str:
+    def truncate(self, max_chars: Dict[str, int], output_context_str: bool = False) -> str:
         """Genearate a tabular representation of the context.
 
         Truncate the tables to the maximum number of assigned tokens.
@@ -308,7 +308,7 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
             else:
                 context.append("\n#Entities: None\n")
 
-            if len(self.relationships):
+            if len(self.relations):
                 context.extend(
                     [
                         "\n## Relationships",
@@ -341,7 +341,7 @@ class TQueryResponse(Generic[GTNode, GTEdge, GTHash, GTChunk]):
             "context": {
                 "entities": [(e.to_dict(e, include_fields=e.F_TO_CONTEXT), float(s)) for e, s in self.context.entities],
                 "relationships": [
-                    (r.to_dict(r, include_fields=r.F_TO_CONTEXT), float(s)) for r, s in self.context.relationships
+                    (r.to_dict(r, include_fields=r.F_TO_CONTEXT), float(s)) for r, s in self.context.relations
                 ],
                 "chunks": [(c.to_dict(c, include_fields=c.F_TO_CONTEXT), float(s)) for c, s in self.context.chunks],
             },

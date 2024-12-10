@@ -92,8 +92,8 @@ class TestTypes(unittest.TestCase):
             relations=[(r, TScore(0.8)) for r in relationships],
             chunks=[(c, TScore(0.7)) for c in chunks],
         )
-        max_chars = {"entities": 128, "relationships": 128, "chunks": 512}
-        csv = context.to_str(max_chars.copy())
+        max_chars = {"entities": 128, "relations": 128, "chunks": 512}
+        csv = context.truncate(max_chars.copy(), True)
 
         csv_entities = re.findall(r"## Entities\n```csv\n(.*?)\n```", csv, re.DOTALL)
         csv_relationships = re.findall(r"## Relationships\n```csv\n(.*?)\n```", csv, re.DOTALL)
