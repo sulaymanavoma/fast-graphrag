@@ -14,14 +14,15 @@ from ._models import BaseModelAlias, dump_to_csv, dump_to_reference_list
 ####################################################################################################
 
 
+@dataclass
 class TSerializable:
     F_TO_CONTEXT: ClassVar[List[str]] = []
 
     @classmethod
     def to_dict(
         cls,
-        obj: Optional["TRelation"] = None,
-        objs: Optional[Iterable["TRelation"]] = None,
+        obj: Optional["TSerializable"] = None,
+        objs: Optional[Iterable["TSerializable"]] = None,
         include_fields: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         # Compute the fields to include
@@ -32,6 +33,7 @@ class TSerializable:
             return {f: getattr(obj, f) for f in include_fields}
         elif objs is not None:
             return {f: [getattr(o, f) for o in objs] for f in include_fields}
+        return {}
 
 
 # Blob
@@ -122,7 +124,7 @@ class TEntity(BaseModelAlias, BTNode):
     description: str = field()
 
     def to_str(self) -> str:
-        s = f"[NAME] {self.name}"
+        s = f"[{self.type}] {self.name}"
         if len(self.description):
             s += f"\n[DESCRIPTION] {self.description}"
         return s
@@ -361,7 +363,7 @@ class TQueryResponse(Generic[GTNode, GTEdge, GTHash, GTChunk]):
         index: Optional[int] = field(init=False, default=None)
         _last_chunk_index: int = field(init=False, default=0)
 
-        def get_chunk(self, id: int) -> Tuple[int, "TQueryResponse.Chunk"]:
+        def get_chunk(self, id: int) -> Tuple[int, "TQueryResponse._Chunk"]:
             chunk = self.chunks[id]
             if chunk.index is None:
                 self._last_chunk_index += 1
