@@ -255,7 +255,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
                 if chunk is not None:
                     relevant_chunks.append((chunk, s))
 
-            return TContext(entities=relevant_entities, relationships=relevant_relationships, chunks=relevant_chunks)
+            return TContext(entities=relevant_entities, relations=relevant_relationships, chunks=relevant_chunks)
         except Exception as e:
             logger.error(f"Error during scoring of chunks and relationships.\n{e}")
             raise e

@@ -89,7 +89,7 @@ class TestTypes(unittest.TestCase):
             r.chunks = [c.id]
         context = TContext(
             entities=[(e, TScore(0.9)) for e in entities],
-            relationships=[(r, TScore(0.8)) for r in relationships],
+            relations=[(r, TScore(0.8)) for r in relationships],
             chunks=[(c, TScore(0.7)) for c in chunks],
         )
         max_chars = {"entities": 128, "relationships": 128, "chunks": 512}
@@ -110,7 +110,7 @@ class TestTypes(unittest.TestCase):
     def test_tqueryresponse(self):
         context = TContext(
             entities=[("Entity1", TScore(0.9))],
-            relationships=[("Relation1", TScore(0.8))],
+            relations=[("Relation1", TScore(0.8))],
             chunks=[("Chunk1", TScore(0.7))],
         )
         query_response = TQueryResponse(response="Sample response", context=context)

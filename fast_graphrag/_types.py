@@ -245,7 +245,7 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
     """A class for representing the context used to generate a query response."""
 
     entities: List[Tuple[GTNode, TScore]] = field()
-    relationships: List[Tuple[GTEdge, TScore]] = field()
+    relations: List[Tuple[GTEdge, TScore]] = field()
     chunks: List[Tuple[GTChunk, TScore]] = field()
 
     def truncate(self, max_chars: Dict[str, int], output_context_str: bool = True) -> str:
@@ -255,15 +255,15 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
         """
         csv_tables: Dict[str, List[str]] = {
             "entities": dump_to_csv([e for e, _ in self.entities], ["name", "description"], with_header=True),
-            "relationships": dump_to_csv(
-                [r for r, _ in self.relationships], ["source", "target", "description"], with_header=True
+            "relations": dump_to_csv(
+                [r for r, _ in self.relations], ["source", "target", "description"], with_header=True
             ),
             "chunks": dump_to_reference_list([str(c) for c, _ in self.chunks]),
         }
         csv_tables_row_length = {k: [len(row) for row in table] for k, table in csv_tables.items()}
 
         # Truncate each csv to the maximum number of assigned tokens
-        included_up_to = {key: 0 for key in ["entities", "relationships", "chunks"]}
+        included_up_to = {key: 0 for key in ["entities", "relations", "chunks"]}
         chars_remainder = 0
         while True:
             last_char_remainder = chars_remainder
@@ -290,7 +290,7 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
 
         # Truncate the context
         self.entities = self.entities[: included_up_to["entities"]]
-        self.relationships = self.relationships[: included_up_to["relationships"]]
+        self.relations = self.relations[: included_up_to["relations"]]
         self.chunks = self.chunks[: included_up_to["chunks"]]
 
         # Generate the context string
@@ -313,7 +313,7 @@ class TContext(Generic[GTNode, GTEdge, GTHash, GTChunk]):
                     [
                         "\n## Relationships",
                         "```csv",
-                        *csv_tables["relationships"][: included_up_to["relationships"]],
+                        *csv_tables["relations"][: included_up_to["relations"]],
                         "```",
                     ]
                 )
