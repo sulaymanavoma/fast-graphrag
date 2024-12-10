@@ -23,11 +23,11 @@ class InsertParam:
 
 @dataclass
 class QueryParam:
-    with_references: bool = False
-    only_context: bool = False
-    entities_max_tokens: int = 4000
-    relationships_max_tokens: int = 3000
-    chunks_max_tokens: int = 9000
+    with_references: bool = field(default=False)
+    only_context: bool = field(default=False)
+    entities_max_tokens: int = field(default=4000)
+    relations_max_tokens: int = field(default=3000)
+    chunks_max_tokens: int = field(default=9000)
 
 
 @dataclass
@@ -177,13 +177,21 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         )
 
         # Retrieve relevant state
-        relevant_state = await self.state_manager.get_context(query=query, entities=extracted_entities)
-        if relevant_state is None:
+        context = await self.state_manager.get_context(query=query, entities=extracted_entities)
+        if context is None:
             return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](
                 response=PROMPTS["fail_response"], context=TContext([], [], [])
             )
 
         # Ask LLM
+        context_str = context.truncate(
+            max_chars={
+                "entities": params.entities_max_tokens * TOKEN_TO_CHAR_RATIO,
+                "relations": params.relations_max_tokens * TOKEN_TO_CHAR_RATIO,
+                "chunks": params.chunks_max_tokens * TOKEN_TO_CHAR_RATIO,
+            },
+            output_context_str=not params.only_context
+        )
         if params.only_context:
             answer = ""
         else:
@@ -194,19 +202,13 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
                 llm=self.llm_service,
                 format_kwargs={
                     "query": query,
-                    "context": relevant_state.to_str(
-                        {
-                            "entities": params.entities_max_tokens * TOKEN_TO_CHAR_RATIO,
-                            "relationships": params.relationships_max_tokens * TOKEN_TO_CHAR_RATIO,
-                            "chunks": params.chunks_max_tokens * TOKEN_TO_CHAR_RATIO,
-                        }
-                    ),
+                    "context": context_str
                 },
                 response_model=TAnswer,
             )
             answer = llm_response.answer
 
-        return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](response=answer, context=relevant_state)
+        return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](response=answer, context=context)
 
     def save_graphml(self, output_path: str) -> None:
         """Save the graph in GraphML format."""
