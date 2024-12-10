@@ -35,7 +35,7 @@ from ._base import BaseStateManagerService
 @dataclass
 class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THash, TChunk, TId, TEmbedding]):
     blob_storage_cls: Type[BaseBlobStorage[csr_matrix]] = field(default=PickleBlobStorage)
-    insert_similarity_score_threshold: float = field(default=0.8)
+    insert_similarity_score_threshold: float = field(default=0.85)
     query_similarity_score_threshold: Optional[float] = field(default=0.7)
 
     def __post_init__(self):
@@ -133,7 +133,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
         # when selecting the index order.
         progress_bar.set_description("Building... [entity deduplication]")
         upserted_indices = np.array([i for i, _ in upserted_nodes]).reshape(-1, 1)
-        similar_indices, scores = await self.entity_storage.get_knn(embeddings, top_k=5)
+        similar_indices, scores = await self.entity_storage.get_knn(embeddings, top_k=3)
         similar_indices = np.array(similar_indices)
         scores = np.array(scores)
 
@@ -190,7 +190,7 @@ class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THa
 
         try:
             query_embeddings = await self.embedding_service.encode(
-                [f"[NAME] {n}" for n in entities["named"]] + [f"[NAME] {n}" for n in entities["generic"]] + [query]
+                [f"{n}" for n in entities["named"]] + [f"[NONE] {n}" for n in entities["generic"]] + [query]
             )
             entity_scores: List[csr_matrix] = []
             # Similarity-search over entities
