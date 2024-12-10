@@ -16,7 +16,7 @@ from ._base import BaseVectorStorage
 
 @dataclass
 class HNSWVectorStorageConfig:
-    ef_construction: int = field(default=256)
+    ef_construction: int = field(default=128)
     M: int = field(default=64)
     ef_search: int = field(default=96)
     num_threads: int = field(default=-1)
