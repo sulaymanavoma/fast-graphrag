@@ -340,7 +340,7 @@ class TQueryResponse(Generic[GTNode, GTEdge, GTHash, GTChunk]):
             "response": self.response,
             "context": {
                 "entities": [(e.to_dict(e, include_fields=e.F_TO_CONTEXT), float(s)) for e, s in self.context.entities],
-                "relationships": [
+                "relations": [
                     (r.to_dict(r, include_fields=r.F_TO_CONTEXT), float(s)) for r, s in self.context.relations
                 ],
                 "chunks": [(c.to_dict(c, include_fields=c.F_TO_CONTEXT), float(s)) for c, s in self.context.chunks],
