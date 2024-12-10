@@ -35,7 +35,7 @@ from ._base import BaseStateManagerService
 @dataclass
 class DefaultStateManagerService(BaseStateManagerService[TEntity, TRelation, THash, TChunk, TId, TEmbedding]):
     blob_storage_cls: Type[BaseBlobStorage[csr_matrix]] = field(default=PickleBlobStorage)
-    insert_similarity_score_threshold: float = field(default=0.85)
+    insert_similarity_score_threshold: float = field(default=0.9)
     query_similarity_score_threshold: Optional[float] = field(default=0.7)
 
     def __post_init__(self):
