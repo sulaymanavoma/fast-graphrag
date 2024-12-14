@@ -157,7 +157,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         return get_event_loop().run_until_complete(_query())
 
     async def async_query(
-        self, query: str, params: Optional[QueryParam] = None
+        self, query: Optional[str], params: Optional[QueryParam] = None
     ) -> TQueryResponse[GTNode, GTEdge, GTHash, GTChunk]:
         """Query the graph with a given input.
 
@@ -168,6 +168,10 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
         Returns:
             TQueryResponse: The result of the query (response + context).
         """
+        if query is None or len(query) == 0:
+            return TQueryResponse[GTNode, GTEdge, GTHash, GTChunk](
+                response=PROMPTS["fail_response"], context=TContext([], [], [])
+            )
         if params is None:
             params = QueryParam()
 
