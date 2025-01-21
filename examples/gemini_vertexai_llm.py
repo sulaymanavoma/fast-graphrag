@@ -1,5 +1,5 @@
 """Example usage of GraphRAG with Gemini LLM and Embeddings from VertexAI"""
-# DEPENDENCIES: pip install fast-graphrag, google-cloud-aiplatform
+# DEPENDENCIES: pip install fast-graphrag google-cloud-aiplatform
 # VertexAI: https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstarts/try-gen-ai
 # Login with your Google Cloud account in CLI: gcloud auth application-default login
 # Run this example: python gemini_vertexai_llm.py
@@ -132,7 +132,7 @@ class VertexAIEmbeddingService(BaseEmbeddingService):
             logger.error(f"Error in embedding request: {str(e)}")
             raise
 
-## For VertexAI
+
 @dataclass
 class VertexAILLMService(BaseLLMService):
     """Vertex AI implementation for LLM services using Gemini models."""
