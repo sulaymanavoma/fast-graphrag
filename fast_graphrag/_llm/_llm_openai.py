@@ -123,6 +123,9 @@ class OpenAILLMService(BaseLLMService):
 
         return llm_response, messages
 
+@dataclass
+class OpenAILLMServiceStrong(OpenAILLMService):
+    model = "gpt-4o"
 
 @dataclass
 class OpenAIEmbeddingService(BaseEmbeddingService):
