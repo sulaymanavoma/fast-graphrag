@@ -5,7 +5,7 @@ __all__ = ["GraphRAG", "QueryParam"]
 from dataclasses import dataclass, field
 from typing import Type
 
-from fast_graphrag._llm import DefaultEmbeddingService, DefaultLLMService
+from fast_graphrag._llm import DefaultEmbeddingService, DefaultLLMService, DefaultLLMServiceStrong
 from fast_graphrag._llm._base import BaseEmbeddingService
 from fast_graphrag._llm._llm_openai import BaseLLMService
 from fast_graphrag._policies._base import BaseGraphUpsertPolicy
@@ -61,6 +61,7 @@ class GraphRAG(BaseGraphRAG[TEmbedding, THash, TChunk, TEntity, TRelation, TId])
         )
 
         llm_service: BaseLLMService = field(default_factory=lambda: DefaultLLMService())
+        llm_service_strong: BaseLLMService = field(default_factory=lambda: DefaultLLMServiceStrong())
         embedding_service: BaseEmbeddingService = field(default_factory=lambda: DefaultEmbeddingService())
 
         graph_storage: DefaultGraphStorage[TEntity, TRelation, TId] = field(
@@ -100,6 +101,7 @@ class GraphRAG(BaseGraphRAG[TEmbedding, THash, TChunk, TEntity, TRelation, TId])
     def __post_init__(self):
         """Initialize the GraphRAG class."""
         self.llm_service = self.config.llm_service
+        self.llm_service_strong = self.config.llm_service_strong
         self.embedding_service = self.config.embedding_service
         self.chunking_service = self.config.chunking_service_cls()
         self.information_extraction_service = self.config.information_extraction_service_cls(

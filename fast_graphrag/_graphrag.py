@@ -41,6 +41,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
     n_checkpoints: int = field(default=0)
 
     llm_service: BaseLLMService = field(init=False, default_factory=lambda: BaseLLMService())
+    llm_service_strong: BaseLLMService = field(default_factory=lambda: BaseLLMService())
     chunking_service: BaseChunkingService[GTChunk] = field(init=False, default_factory=lambda: BaseChunkingService())
     information_extraction_service: BaseInformationExtractionService[GTChunk, GTNode, GTEdge, GTId] = field(
         init=False,
@@ -177,7 +178,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
 
         # Extract entities from query
         extracted_entities = await self.information_extraction_service.extract_entities_from_query(
-            llm=self.llm_service, query=query, prompt_kwargs={}
+            llm=self.llm_service_strong, query=query, prompt_kwargs={}
         )
 
         # Retrieve relevant state
@@ -203,7 +204,7 @@ class BaseGraphRAG(Generic[GTEmbedding, GTHash, GTChunk, GTNode, GTEdge, GTId]):
                 prompt_key="generate_response_query_with_references"
                 if params.with_references
                 else "generate_response_query_no_references",
-                llm=self.llm_service,
+                llm=self.llm_service_strong,
                 format_kwargs={
                     "query": query,
                     "context": context_str
