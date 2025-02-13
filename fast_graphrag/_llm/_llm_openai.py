@@ -96,7 +96,7 @@ class OpenAILLMService(BaseLLMService):
             "response_format": response_model.Model if response_model and issubclass(response_model, BaseModelAlias) else response_model,
             **kwargs,
         }
-        llm_response: T_model = await self.llm_async_client.chat.completions.create(
+        llm_response: T_model = await self.llm_async_client.beta.chat.completions.parse(
             ** params,
             # model=model,
             # messages=messages,  # type: ignore
