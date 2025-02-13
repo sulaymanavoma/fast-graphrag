@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from itertools import chain
 from typing import Any, List, Literal, Optional, Tuple, Type, cast
 
-import instructor
 import numpy as np
 from openai import APIConnectionError, AsyncAzureOpenAI, AsyncOpenAI, RateLimitError
 from pydantic import BaseModel
@@ -31,7 +30,7 @@ class OpenAILLMService(BaseLLMService):
     """LLM Service for OpenAI LLMs."""
 
     model: Optional[str] = field(default="gpt-4o-mini")
-    mode: instructor.Mode = field(default=instructor.Mode.JSON)
+    mode: Optional[str] = field(default="json")
     client: Literal["openai", "azure"] = field(default="openai")
     api_version: Optional[str] = field(default=None)
 
@@ -40,19 +39,14 @@ class OpenAILLMService(BaseLLMService):
             assert (
                 self.base_url is not None and self.api_version is not None
             ), "Azure OpenAI requires a base url and an api version."
-            self.llm_async_client = instructor.from_openai(
-                AsyncAzureOpenAI(
+            self.llm_async_client = AsyncAzureOpenAI(
                     azure_endpoint=self.base_url,
                     api_key=self.api_key,
                     api_version=self.api_version,
                     timeout=TIMEOUT_SECONDS,
-                ),
-                mode=self.mode,
-            )
+                    )
         elif self.client == "openai":
-            self.llm_async_client = instructor.from_openai(
-                AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS), mode=self.mode
-            )
+            self.llm_async_client = AsyncOpenAI(base_url=self.base_url, api_key=self.api_key, timeout=TIMEOUT_SECONDS)
         else:
             raise ValueError("Invalid client type. Must be 'openai' or 'azure'")
         logger.debug("Initialized OpenAILLMService with patched OpenAI client.")
@@ -99,7 +93,7 @@ class OpenAILLMService(BaseLLMService):
         llm_response: T_model = await self.llm_async_client.chat.completions.create(
             model=model,
             messages=messages,  # type: ignore
-            response_model=response_model.Model
+            resonse_format=response_model.Model
             if response_model and issubclass(response_model, BaseModelAlias)
             else response_model,
             **kwargs,
