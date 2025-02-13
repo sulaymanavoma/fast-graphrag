@@ -90,14 +90,21 @@ class OpenAILLMService(BaseLLMService):
 
         messages.append({"role": "user", "content": prompt})
 
-        llm_response: T_model = await self.llm_async_client.chat.completions.create(
-            model=model,
-            messages=messages,  # type: ignore
-            resonse_format=response_model.Model
-            if response_model and issubclass(response_model, BaseModelAlias)
-            else response_model,
+        params = {
+            "model": model,
+            "messages": messages,
+            "response_format": response_model.Model if response_model and issubclass(response_model, BaseModelAlias) else response_model,
             **kwargs,
-            max_retries=AsyncRetrying(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10)),
+        }
+        llm_response: T_model = await self.llm_async_client.chat.completions.create(
+            ** params,
+            # model=model,
+            # messages=messages,  # type: ignore
+            # resonse_format=response_model.Model
+            # if response_model and issubclass(response_model, BaseModelAlias)
+            # else response_model,
+            # **kwargs,
+            # max_retries=AsyncRetrying(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10)),
         )
 
         if not llm_response:
