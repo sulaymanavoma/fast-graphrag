@@ -98,13 +98,6 @@ class OpenAILLMService(BaseLLMService):
         }
         llm_response: T_model = await self.llm_async_client.beta.chat.completions.parse(
             ** params,
-            # model=model,
-            # messages=messages,  # type: ignore
-            # resonse_format=response_model.Model
-            # if response_model and issubclass(response_model, BaseModelAlias)
-            # else response_model,
-            # **kwargs,
-            # max_retries=AsyncRetrying(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10)),
         )
 
         if not llm_response:
@@ -120,7 +113,8 @@ class OpenAILLMService(BaseLLMService):
         logger.debug(f"Received response: {llm_response}")
 
         if response_model and issubclass(response_model, BaseModelAlias):
-            llm_response = cast(T_model, cast(BaseModelAlias.Model, llm_response).to_dataclass(llm_response))
+            # llm_response = cast(T_model, cast(BaseModelAlias.Model, llm_response).to_dataclass(llm_response))
+            llm_response = llm_response.choices[0].message.parsed
 
         return llm_response, messages
 
